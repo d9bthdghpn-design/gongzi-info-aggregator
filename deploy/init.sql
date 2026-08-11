@@ -9,7 +9,7 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 -- ============================================================
 -- 1. 用户表 (users)
 -- ============================================================
-CREATE TABLE users (
+CREATE TABLE IF NOT EXISTS users (
     id              UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     username        VARCHAR(64) NOT NULL UNIQUE,
     email           VARCHAR(128),
@@ -28,13 +28,13 @@ CREATE TABLE users (
     updated_at      TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
 );
 
-CREATE INDEX idx_users_role ON users(role);
-CREATE INDEX idx_users_sso ON users(sso_provider, sso_openid);
+CREATE INDEX IF NOT EXISTS idx_users_role ON users(role);
+CREATE INDEX IF NOT EXISTS idx_users_sso ON users(sso_provider, sso_openid);
 
 -- ============================================================
 -- 2. 标签字典表 (tag_dictionary)
 -- ============================================================
-CREATE TABLE tag_dictionary (
+CREATE TABLE IF NOT EXISTS tag_dictionary (
     id              UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     tag_type        VARCHAR(32) NOT NULL,    -- business/area/industry/info_type
     tag_code        VARCHAR(64) NOT NULL,
@@ -47,13 +47,13 @@ CREATE TABLE tag_dictionary (
     updated_at      TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
 );
 
-CREATE UNIQUE INDEX idx_tag_unique ON tag_dictionary(tag_type, tag_code);
-CREATE INDEX idx_tag_type ON tag_dictionary(tag_type, is_active);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_tag_unique ON tag_dictionary(tag_type, tag_code);
+CREATE INDEX IF NOT EXISTS idx_tag_type ON tag_dictionary(tag_type, is_active);
 
 -- ============================================================
 -- 3. 采集渠道配置表 (crawl_sources)
 -- ============================================================
-CREATE TABLE crawl_sources (
+CREATE TABLE IF NOT EXISTS crawl_sources (
     id                      UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     name                    VARCHAR(128) NOT NULL,
     source_type             VARCHAR(32) NOT NULL,   -- gov/park/enterprise/bidding/wechat/xhs
@@ -74,13 +74,13 @@ CREATE TABLE crawl_sources (
     updated_at              TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
 );
 
-CREATE INDEX idx_crawl_active ON crawl_sources(is_active, priority);
-CREATE INDEX idx_crawl_type ON crawl_sources(crawl_type);
+CREATE INDEX IF NOT EXISTS idx_crawl_active ON crawl_sources(is_active, priority);
+CREATE INDEX IF NOT EXISTS idx_crawl_type ON crawl_sources(crawl_type);
 
 -- ============================================================
 -- 4. 资讯主表 (news_items)
 -- ============================================================
-CREATE TABLE news_items (
+CREATE TABLE IF NOT EXISTS news_items (
     id                  UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     title               VARCHAR(512) NOT NULL,
     content_raw         TEXT,                       -- 原始正文
@@ -108,20 +108,20 @@ CREATE TABLE news_items (
 );
 
 -- 核心索引
-CREATE INDEX idx_news_status_date ON news_items(status, publish_date DESC);
-CREATE INDEX idx_news_business_date ON news_items(business_category, publish_date DESC) WHERE is_deleted = false;
-CREATE INDEX idx_news_area ON news_items USING GIN(area_tags) WHERE is_deleted = false;
-CREATE INDEX idx_news_industry ON news_items USING GIN(industry_tags) WHERE is_deleted = false;
-CREATE INDEX idx_news_info_type ON news_items(info_type, publish_date DESC) WHERE is_deleted = false;
-CREATE UNIQUE INDEX idx_news_dedup_hash ON news_items(dedup_hash) WHERE dedup_hash IS NOT NULL;
-CREATE UNIQUE INDEX idx_news_source_url ON news_items(source_url) WHERE source_url IS NOT NULL;
-CREATE INDEX idx_news_quality ON news_items(quality_score DESC) WHERE status = 'published' AND is_deleted = false;
-CREATE INDEX idx_news_published ON news_items(publish_date DESC) WHERE status = 'published' AND is_deleted = false;
+CREATE INDEX IF NOT EXISTS idx_news_status_date ON news_items(status, publish_date DESC);
+CREATE INDEX IF NOT EXISTS idx_news_business_date ON news_items(business_category, publish_date DESC) WHERE is_deleted = false;
+CREATE INDEX IF NOT EXISTS idx_news_area ON news_items USING GIN(area_tags) WHERE is_deleted = false;
+CREATE INDEX IF NOT EXISTS idx_news_industry ON news_items USING GIN(industry_tags) WHERE is_deleted = false;
+CREATE INDEX IF NOT EXISTS idx_news_info_type ON news_items(info_type, publish_date DESC) WHERE is_deleted = false;
+CREATE UNIQUE INDEX IF NOT EXISTS idx_news_dedup_hash ON news_items(dedup_hash) WHERE dedup_hash IS NOT NULL;
+CREATE UNIQUE INDEX IF NOT EXISTS idx_news_source_url ON news_items(source_url) WHERE source_url IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_news_quality ON news_items(quality_score DESC) WHERE status = 'published' AND is_deleted = false;
+CREATE INDEX IF NOT EXISTS idx_news_published ON news_items(publish_date DESC) WHERE status = 'published' AND is_deleted = false;
 
 -- ============================================================
 -- 5. 线索表 (leads)
 -- ============================================================
-CREATE TABLE leads (
+CREATE TABLE IF NOT EXISTS leads (
     id                  UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     company_name        VARCHAR(256) NOT NULL,
     credit_code         VARCHAR(32),                -- 统一社会信用代码
@@ -148,16 +148,16 @@ CREATE TABLE leads (
     updated_at          TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
 );
 
-CREATE INDEX idx_leads_status_created ON leads(status, created_at DESC) WHERE is_deleted = false;
-CREATE INDEX idx_leads_assignee ON leads(assignee_id, status) WHERE is_deleted = false;
-CREATE INDEX idx_leads_public_pool ON leads(public_pool, status) WHERE public_pool = true AND is_deleted = false;
-CREATE INDEX idx_leads_company ON leads(company_name) WHERE is_deleted = false;
-CREATE INDEX idx_leads_area ON leads(area) WHERE is_deleted = false;
+CREATE INDEX IF NOT EXISTS idx_leads_status_created ON leads(status, created_at DESC) WHERE is_deleted = false;
+CREATE INDEX IF NOT EXISTS idx_leads_assignee ON leads(assignee_id, status) WHERE is_deleted = false;
+CREATE INDEX IF NOT EXISTS idx_leads_public_pool ON leads(public_pool, status) WHERE public_pool = true AND is_deleted = false;
+CREATE INDEX IF NOT EXISTS idx_leads_company ON leads(company_name) WHERE is_deleted = false;
+CREATE INDEX IF NOT EXISTS idx_leads_area ON leads(area) WHERE is_deleted = false;
 
 -- ============================================================
 -- 6. 线索跟进记录表 (lead_followups)
 -- ============================================================
-CREATE TABLE lead_followups (
+CREATE TABLE IF NOT EXISTS lead_followups (
     id              UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     lead_id         UUID NOT NULL REFERENCES leads(id),
     followup_type   VARCHAR(32) NOT NULL,    -- phone/visit/email/meeting/other
@@ -170,13 +170,13 @@ CREATE TABLE lead_followups (
     created_at      TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
 );
 
-CREATE INDEX idx_followups_lead ON lead_followups(lead_id, followup_time DESC);
-CREATE INDEX idx_followups_follower ON lead_followups(follower_id, followup_time DESC);
+CREATE INDEX IF NOT EXISTS idx_followups_lead ON lead_followups(lead_id, followup_time DESC);
+CREATE INDEX IF NOT EXISTS idx_followups_follower ON lead_followups(follower_id, followup_time DESC);
 
 -- ============================================================
 -- 7. 每日简报表 (daily_briefings)
 -- ============================================================
-CREATE TABLE daily_briefings (
+CREATE TABLE IF NOT EXISTS daily_briefings (
     id                  UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     brief_date          DATE NOT NULL,
     area_scope          VARCHAR(64),
@@ -190,13 +190,13 @@ CREATE TABLE daily_briefings (
     updated_at          TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
 );
 
-CREATE UNIQUE INDEX idx_briefing_date ON daily_briefings(brief_date);
-CREATE INDEX idx_briefing_pushed ON daily_briefings(is_pushed, brief_date DESC);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_briefing_date ON daily_briefings(brief_date);
+CREATE INDEX IF NOT EXISTS idx_briefing_pushed ON daily_briefings(is_pushed, brief_date DESC);
 
 -- ============================================================
 -- 8. 采集日志表 (crawl_logs)
 -- ============================================================
-CREATE TABLE crawl_logs (
+CREATE TABLE IF NOT EXISTS crawl_logs (
     id              UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     source_id       UUID NOT NULL REFERENCES crawl_sources(id),
     crawl_start     TIMESTAMP WITH TIME ZONE NOT NULL,
@@ -210,13 +210,13 @@ CREATE TABLE crawl_logs (
     created_at      TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
 );
 
-CREATE INDEX idx_crawl_logs_source ON crawl_logs(source_id, crawl_start DESC);
-CREATE INDEX idx_crawl_logs_status ON crawl_logs(status, crawl_start DESC);
+CREATE INDEX IF NOT EXISTS idx_crawl_logs_source ON crawl_logs(source_id, crawl_start DESC);
+CREATE INDEX IF NOT EXISTS idx_crawl_logs_status ON crawl_logs(status, crawl_start DESC);
 
 -- ============================================================
 -- 9. AI处理日志表 (ai_process_logs)
 -- ============================================================
-CREATE TABLE ai_process_logs (
+CREATE TABLE IF NOT EXISTS ai_process_logs (
     id              UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     news_id         UUID NOT NULL REFERENCES news_items(id),
     process_type    VARCHAR(32) NOT NULL,    -- classify/summarize/tip/score/all
@@ -232,14 +232,14 @@ CREATE TABLE ai_process_logs (
     created_at      TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
 );
 
-CREATE INDEX idx_ai_logs_news ON ai_process_logs(news_id, created_at DESC);
-CREATE INDEX idx_ai_logs_type ON ai_process_logs(process_type, created_at DESC);
-CREATE INDEX idx_ai_logs_success ON ai_process_logs(success, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_ai_logs_news ON ai_process_logs(news_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_ai_logs_type ON ai_process_logs(process_type, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_ai_logs_success ON ai_process_logs(success, created_at DESC);
 
 -- ============================================================
 -- 10. 操作日志表 (operation_logs)
 -- ============================================================
-CREATE TABLE operation_logs (
+CREATE TABLE IF NOT EXISTS operation_logs (
     id              UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     user_id         UUID REFERENCES users(id),
     action          VARCHAR(64) NOT NULL,    -- create/update/delete/audit/assign
@@ -252,14 +252,14 @@ CREATE TABLE operation_logs (
     created_at      TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
 );
 
-CREATE INDEX idx_op_logs_user ON operation_logs(user_id, created_at DESC);
-CREATE INDEX idx_op_logs_target ON operation_logs(target_type, target_id);
-CREATE INDEX idx_op_logs_action ON operation_logs(action, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_op_logs_user ON operation_logs(user_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_op_logs_target ON operation_logs(target_type, target_id);
+CREATE INDEX IF NOT EXISTS idx_op_logs_action ON operation_logs(action, created_at DESC);
 
 -- ============================================================
 -- 11. 业务专题表 (topics)
 -- ============================================================
-CREATE TABLE topics (
+CREATE TABLE IF NOT EXISTS topics (
     id              UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     title           VARCHAR(256) NOT NULL,
     description     TEXT,
@@ -272,7 +272,7 @@ CREATE TABLE topics (
     updated_at      TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
 );
 
-CREATE INDEX idx_topics_active ON topics(is_active, sort_order);
+CREATE INDEX IF NOT EXISTS idx_topics_active ON topics(is_active, sort_order);
 
 -- ============================================================
 -- 初始化数据
@@ -390,21 +390,30 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- 为有updated_at的表添加触发器
-CREATE TRIGGER update_users_updated_at BEFORE UPDATE ON users
-    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-CREATE TRIGGER update_tag_dict_updated_at BEFORE UPDATE ON tag_dictionary
-    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-CREATE TRIGGER update_crawl_sources_updated_at BEFORE UPDATE ON crawl_sources
-    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-CREATE TRIGGER update_news_updated_at BEFORE UPDATE ON news_items
-    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-CREATE TRIGGER update_leads_updated_at BEFORE UPDATE ON leads
-    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-CREATE TRIGGER update_briefings_updated_at BEFORE UPDATE ON daily_briefings
-    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-CREATE TRIGGER update_topics_updated_at BEFORE UPDATE ON topics
-    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+-- 为有updated_at的表添加触发器（先删后建，确保幂等）
+DO $$ BEGIN
+    DROP TRIGGER IF EXISTS update_users_updated_at ON users;
+    CREATE TRIGGER update_users_updated_at BEFORE UPDATE ON users
+        FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+    DROP TRIGGER IF EXISTS update_tag_dict_updated_at ON tag_dictionary;
+    CREATE TRIGGER update_tag_dict_updated_at BEFORE UPDATE ON tag_dictionary
+        FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+    DROP TRIGGER IF EXISTS update_crawl_sources_updated_at ON crawl_sources;
+    CREATE TRIGGER update_crawl_sources_updated_at BEFORE UPDATE ON crawl_sources
+        FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+    DROP TRIGGER IF EXISTS update_news_updated_at ON news_items;
+    CREATE TRIGGER update_news_updated_at BEFORE UPDATE ON news_items
+        FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+    DROP TRIGGER IF EXISTS update_leads_updated_at ON leads;
+    CREATE TRIGGER update_leads_updated_at BEFORE UPDATE ON leads
+        FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+    DROP TRIGGER IF EXISTS update_briefings_updated_at ON daily_briefings;
+    CREATE TRIGGER update_briefings_updated_at BEFORE UPDATE ON daily_briefings
+        FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+    DROP TRIGGER IF EXISTS update_topics_updated_at ON topics;
+    CREATE TRIGGER update_topics_updated_at BEFORE UPDATE ON topics
+        FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+END $$;
 
 -- ============================================================
 -- 线索保护期到期自动回收函数
