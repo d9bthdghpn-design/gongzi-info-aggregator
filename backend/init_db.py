@@ -1,0 +1,355 @@
+"""
+数据库初始化脚本 - 创建表并插入初始数据
+"""
+import sys
+import os
+import uuid
+from datetime import datetime, date
+
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+from app.database import Base, engine, SessionLocal
+from app.models import User, TagDictionary, CrawlSource, NewsItem, Topic
+from app.core.security import get_password_hash
+
+
+def init_db():
+    """初始化数据库"""
+    print("正在创建数据表...")
+
+    # 导入所有模型确保注册
+    from app.models import user, news, lead, log
+
+    # 创建所有表
+    Base.metadata.create_all(bind=engine)
+
+    print("数据表创建完成！")
+
+    # 插入初始数据
+    db = SessionLocal()
+    try:
+        # 检查是否已有数据
+        if db.query(User).count() > 0:
+            print("数据库已有数据，跳过初始化")
+            return
+
+        print("正在插入初始数据...")
+
+        # 1. 创建管理员用户
+        admin = User(
+            id=str(uuid.uuid4()),
+            username="admin",
+            email="admin@example.com",
+            full_name="系统管理员",
+            password_hash=get_password_hash("admin123"),
+            role="admin",
+            department="信息技术部",
+            position="系统管理员",
+            is_active=True,
+            created_at=datetime.utcnow(),
+            updated_at=datetime.utcnow(),
+        )
+        db.add(admin)
+
+        # 2. 创建普通用户
+        viewer = User(
+            id=str(uuid.uuid4()),
+            username="user",
+            email="user@example.com",
+            full_name="张经理",
+            password_hash=get_password_hash("user123"),
+            role="viewer",
+            department="公司业务部",
+            position="客户经理",
+            is_active=True,
+            created_at=datetime.utcnow(),
+            updated_at=datetime.utcnow(),
+        )
+        db.add(viewer)
+
+        # 3. 业务分类标签
+        business_tags = [
+            ("deposit", "存款业务", "#27ae60"),
+            ("loan", "贷款业务", "#e74c3c"),
+            ("investment_bank", "投行业务", "#9b59b6"),
+            ("treasury", "财资业务", "#f39c12"),
+            ("supply_chain", "供应链金融", "#1abc9c"),
+        ]
+        for code, name, color in business_tags:
+            tag = TagDictionary(
+                id=str(uuid.uuid4()),
+                tag_type="business",
+                tag_code=code,
+                tag_name=name,
+                tag_color=color,
+                sort_order=business_tags.index((code, name, color)),
+                is_active=True,
+                created_at=datetime.utcnow(),
+                updated_at=datetime.utcnow(),
+            )
+            db.add(tag)
+
+        # 4. 区域标签
+        area_tags = [
+            ("chaoyang", "朝阳区", "#3498db"),
+            ("haidian", "海淀区", "#2ecc71"),
+            ("fengtai", "丰台区", "#e67e22"),
+        ]
+        for code, name, color in area_tags:
+            tag = TagDictionary(
+                id=str(uuid.uuid4()),
+                tag_type="area",
+                tag_code=code,
+                tag_name=name,
+                tag_color=color,
+                sort_order=area_tags.index((code, name, color)),
+                is_active=True,
+                created_at=datetime.utcnow(),
+                updated_at=datetime.utcnow(),
+            )
+            db.add(tag)
+
+        # 5. 行业标签
+        industry_tags = [
+            ("tech", "信息技术", "#3498db"),
+            ("finance", "金融服务", "#9b59b6"),
+            ("manufacturing", "制造业", "#e67e22"),
+            ("real_estate", "房地产", "#e74c3c"),
+            ("medical", "医药健康", "#2ecc71"),
+            ("education", "教育培训", "#1abc9c"),
+            ("retail", "零售消费", "#f39c12"),
+            ("logistics", "物流运输", "#34495e"),
+            ("energy", "能源环保", "#27ae60"),
+            ("culture", "文化传媒", "#9b59b6"),
+            ("government", "政府机构", "#2c3e50"),
+        ]
+        for code, name, color in industry_tags:
+            tag = TagDictionary(
+                id=str(uuid.uuid4()),
+                tag_type="industry",
+                tag_code=code,
+                tag_name=name,
+                tag_color=color,
+                sort_order=industry_tags.index((code, name, color)),
+                is_active=True,
+                created_at=datetime.utcnow(),
+                updated_at=datetime.utcnow(),
+            )
+            db.add(tag)
+
+        # 6. 资讯类型标签
+        info_type_tags = [
+            ("policy", "政策动态", "#3498db"),
+            ("bidding", "招投标", "#e67e22"),
+            ("enterprise", "企业动态", "#2ecc71"),
+            ("park", "园区动态", "#9b59b6"),
+        ]
+        for code, name, color in info_type_tags:
+            tag = TagDictionary(
+                id=str(uuid.uuid4()),
+                tag_type="info_type",
+                tag_code=code,
+                tag_name=name,
+                tag_color=color,
+                sort_order=info_type_tags.index((code, name, color)),
+                is_active=True,
+                created_at=datetime.utcnow(),
+                updated_at=datetime.utcnow(),
+            )
+            db.add(tag)
+
+        # 7. 示例采集渠道
+        sources = [
+            {
+                "name": "朝阳区政府官网",
+                "source_type": "gov",
+                "crawl_type": "list",
+                "entry_url": "https://www.bjchy.gov.cn/",
+                "priority": 1,
+                "is_active": True,
+            },
+            {
+                "name": "海淀区政府官网",
+                "source_type": "gov",
+                "crawl_type": "list",
+                "entry_url": "https://www.bjhd.gov.cn/",
+                "priority": 1,
+                "is_active": True,
+            },
+            {
+                "name": "中国政府采购网",
+                "source_type": "bidding",
+                "crawl_type": "list",
+                "entry_url": "http://www.ccgp.gov.cn/",
+                "priority": 2,
+                "is_active": True,
+            },
+        ]
+        for s in sources:
+            source = CrawlSource(
+                id=str(uuid.uuid4()),
+                name=s["name"],
+                source_type=s["source_type"],
+                crawl_type=s["crawl_type"],
+                entry_url=s["entry_url"],
+                crawl_interval_hours=24,
+                priority=s["priority"],
+                is_active=s["is_active"],
+                created_at=datetime.utcnow(),
+                updated_at=datetime.utcnow(),
+            )
+            db.add(source)
+
+        # 8. 示例资讯
+        sample_news = [
+            {
+                "title": "朝阳区发布2024年数字经济发展行动计划，将投入50亿元支持企业数字化转型",
+                "content_summary": "朝阳区政府近日发布《2024年数字经济发展行动计划》，计划投入50亿元专项资金，支持辖区内企业数字化转型。重点支持人工智能、大数据、云计算等领域的创新应用，预计将带动超过200家企业参与。",
+                "business_category": "loan",
+                "area_tags": ["chaoyang"],
+                "industry_tags": ["tech", "government"],
+                "info_type": "policy",
+                "source_type": "gov",
+                "source_channel": "朝阳区政府官网",
+                "business_tip": "数字经济转型企业有大量融资需求，可重点对接科技型中小企业贷款、知识产权质押贷款等产品。建议客户经理梳理辖区内科技企业名单，主动上门营销。",
+                "quality_score": 92,
+                "status": "published",
+            },
+            {
+                "title": "海淀区某AI企业完成C轮融资10亿元，计划扩大研发团队",
+                "content_summary": "海淀区某人工智能企业近日宣布完成C轮融资，融资金额达10亿元。该企业专注于大模型技术研发，本轮融资将主要用于扩大研发团队和产品商业化落地。公司目前员工规模约500人，计划年底前扩招至800人。",
+                "business_category": "investment_bank",
+                "area_tags": ["haidian"],
+                "industry_tags": ["tech", "finance"],
+                "info_type": "enterprise",
+                "source_type": "enterprise",
+                "source_channel": "企业动态",
+                "business_tip": "融资完成后企业现金流充裕，可重点营销存款理财、财资管理、员工代发工资等业务。同时可跟进后续IPO相关投行业务机会。",
+                "quality_score": 88,
+                "status": "published",
+            },
+            {
+                "title": "北京市政府采购中心发布2024年信息化建设项目招标公告，预算2.5亿元",
+                "content_summary": "北京市政府采购中心发布2024年度信息化建设项目招标公告，项目总预算2.5亿元。采购内容包括云平台建设、数据中心升级、安全防护体系等多个子项目，投标截止时间为下月15日。",
+                "business_category": "supply_chain",
+                "area_tags": ["chaoyang", "haidian"],
+                "industry_tags": ["government", "tech"],
+                "info_type": "bidding",
+                "source_type": "bidding",
+                "source_channel": "中国政府采购网",
+                "business_tip": "招投标项目涉及大量供应链金融需求，可向投标企业推介投标保函、履约保函、应收账款融资等产品。建议重点关注中标企业名单，及时跟进。",
+                "quality_score": 85,
+                "status": "published",
+            },
+            {
+                "title": "丰台园区新增30家高新技术企业入驻，年产值预计超百亿",
+                "content_summary": "丰台科技园今年以来新增30家高新技术企业入驻，涵盖生物医药、新能源、智能制造等领域。园区管委会表示，预计新增企业全部达产后，年产值将超过100亿元，带动就业超5000人。",
+                "business_category": "deposit",
+                "area_tags": ["fengtai"],
+                "industry_tags": ["manufacturing", "medical"],
+                "info_type": "park",
+                "source_type": "park",
+                "source_channel": "丰台科技园官网",
+                "business_tip": "新入驻企业有开户、结算、代发工资等基础金融需求。建议联合园区管委会开展批量获客，提供一站式金融服务方案。",
+                "quality_score": 78,
+                "status": "published",
+            },
+            {
+                "title": "央行发布结构性货币政策工具新指引，支持科技创新和绿色发展",
+                "content_summary": "央行近日发布结构性货币政策工具新指引，进一步加大对科技创新、绿色发展等重点领域的支持力度。新政策将扩大再贷款再贴现规模，引导金融机构增加相关领域信贷投放。",
+                "business_category": "loan",
+                "area_tags": ["chaoyang", "haidian", "fengtai"],
+                "industry_tags": ["finance", "government"],
+                "info_type": "policy",
+                "source_type": "gov",
+                "source_channel": "央行官网",
+                "business_tip": "政策利好科创贷、绿色信贷等产品。建议抓住政策窗口期，加大相关领域贷款投放力度，优化信贷结构。",
+                "quality_score": 90,
+                "status": "published",
+            },
+        ]
+
+        for i, news in enumerate(sample_news):
+            import json
+            item = NewsItem(
+                id=str(uuid.uuid4()),
+                title=news["title"],
+                content_summary=news["content_summary"],
+                content_raw=news["content_summary"] + "\n\n详细内容正在完善中...",
+                business_category=news["business_category"],
+                area_tags=news["area_tags"],
+                industry_tags=news["industry_tags"],
+                info_type=news["info_type"],
+                source_type=news["source_type"],
+                source_channel=news["source_channel"],
+                source_url=f"https://example.com/news/{i+1}",
+                publish_date=date.today(),
+                business_tip=news["business_tip"],
+                quality_score=news["quality_score"],
+                dedup_hash=f"sample_{i}",
+                status=news["status"],
+                view_count=i * 10 + 5,
+                lead_count=i,
+                created_at=datetime.utcnow(),
+                updated_at=datetime.utcnow(),
+            )
+            db.add(item)
+
+        # 9. 示例专题
+        topics = [
+            {
+                "title": "数字经济专题",
+                "description": "聚焦数字经济发展政策、企业动态、投资机会",
+                "filter_config": {"info_type": ["policy", "enterprise"], "industry_tags": ["tech"]},
+                "sort_order": 1,
+            },
+            {
+                "title": "基建投资专题",
+                "description": "跟踪基础设施建设项目、招投标信息、投资机会",
+                "filter_config": {"info_type": ["bidding"], "business_category": ["loan", "supply_chain"]},
+                "sort_order": 2,
+            },
+            {
+                "title": "专精特新专题",
+                "description": "关注专精特新企业发展、融资需求、上市动态",
+                "filter_config": {"industry_tags": ["tech", "manufacturing"], "info_type": ["enterprise"]},
+                "sort_order": 3,
+            },
+        ]
+
+        for t in topics:
+            topic = Topic(
+                id=str(uuid.uuid4()),
+                title=t["title"],
+                description=t["description"],
+                filter_config=t["filter_config"],
+                sort_order=t["sort_order"],
+                is_active=True,
+                created_by=admin.id,
+                created_at=datetime.utcnow(),
+                updated_at=datetime.utcnow(),
+            )
+            db.add(topic)
+
+        db.commit()
+        print("初始数据插入完成！")
+        print(f"  - 用户: {db.query(User).count()} 个")
+        print(f"  - 标签: {db.query(TagDictionary).count()} 个")
+        print(f"  - 采集渠道: {db.query(CrawlSource).count()} 个")
+        print(f"  - 资讯: {db.query(NewsItem).count()} 条")
+        print(f"  - 专题: {db.query(Topic).count()} 个")
+
+    except Exception as e:
+        db.rollback()
+        print(f"初始化失败: {e}")
+        import traceback
+        traceback.print_exc()
+        raise
+    finally:
+        db.close()
+
+
+if __name__ == "__main__":
+    init_db()
+    print("\n数据库初始化完成！")
+    print("默认账号：admin / admin123")
