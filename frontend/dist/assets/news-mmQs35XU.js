@@ -1,0 +1,1 @@
+import{s as t}from"./index-hgNDy6h2.js";function r(){return t.get("/news/stats")}function a(e){return t.get("/news",{params:e})}function g(e){return t.get(`/news/${e}`)}function o(){return t.get("/news/topics/list")}function c(e,s=1,n=20){return t.get(`/news/topics/${e}/news`,{params:{page:s,page_size:n}})}export{a,o as b,g as c,c as d,r as g};

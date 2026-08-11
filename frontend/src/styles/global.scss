@@ -1,0 +1,231 @@
+@import './variables.scss';
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html,
+body {
+  width: 100%;
+  height: 100%;
+  font-size: 14px;
+  color: $text-primary;
+  background-color: $bg-secondary;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+#app {
+  width: 100%;
+  min-height: 100vh;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+ul,
+ol {
+  list-style: none;
+}
+
+img {
+  max-width: 100%;
+  vertical-align: middle;
+}
+
+// 通用工具类
+.text-primary {
+  color: $text-primary;
+}
+
+.text-secondary {
+  color: $text-secondary;
+}
+
+.text-tertiary {
+  color: $text-tertiary;
+}
+
+.text-success {
+  color: $success-color;
+}
+
+.text-warning {
+  color: $warning-color;
+}
+
+.text-error {
+  color: $error-color;
+}
+
+.text-info {
+  color: $info-color;
+}
+
+.flex {
+  display: flex;
+}
+
+.flex-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.flex-between {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.flex-column {
+  display: flex;
+  flex-direction: column;
+}
+
+.flex-1 {
+  flex: 1;
+}
+
+.ellipsis {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ellipsis-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.ellipsis-3 {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+// 卡片样式
+.card {
+  background-color: $bg-primary;
+  border-radius: $radius-md;
+  box-shadow: $shadow-sm;
+  padding: $spacing-lg;
+}
+
+// 标签样式
+.tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: $radius-sm;
+  font-size: $font-size-xs;
+  line-height: 1.5;
+  background-color: $bg-tertiary;
+  color: $text-secondary;
+}
+
+.tag-primary {
+  background-color: rgba($primary-color, 0.1);
+  color: $primary-color;
+}
+
+.tag-success {
+  background-color: rgba($success-color, 0.1);
+  color: $success-color;
+}
+
+.tag-warning {
+  background-color: rgba($warning-color, 0.1);
+  color: $warning-color;
+}
+
+.tag-error {
+  background-color: rgba($error-color, 0.1);
+  color: $error-color;
+}
+
+// 页面容器
+.page-container {
+  min-height: 100vh;
+  padding-bottom: 60px; // 底部TabBar高度
+}
+
+.page-header {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background-color: $primary-color;
+  color: #fff;
+  padding: $spacing-lg;
+  padding-top: calc($spacing-lg + env(safe-area-inset-top));
+}
+
+.page-title {
+  font-size: $font-size-xl;
+  font-weight: 600;
+  margin-bottom: $spacing-sm;
+}
+
+.page-subtitle {
+  font-size: $font-size-sm;
+  opacity: 0.8;
+}
+
+// 底部TabBar
+.tab-bar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  display: flex;
+  background-color: $bg-primary;
+  border-top: 1px solid $border-light;
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.tab-bar-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: $spacing-sm 0;
+  font-size: $font-size-xs;
+  color: $text-tertiary;
+  transition: color 0.2s;
+
+  &.active {
+    color: $primary-color;
+  }
+
+  .tab-icon {
+    font-size: 20px;
+    margin-bottom: 2px;
+  }
+}
+
+// 悬浮按钮
+.fab {
+  position: fixed;
+  right: $spacing-lg;
+  bottom: 80px;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background-color: $primary-color;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: $shadow-lg;
+  z-index: 99;
+  font-size: 24px;
+}

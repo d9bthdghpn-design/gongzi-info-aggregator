@@ -1,0 +1,66 @@
+# Render 一键部署配置
+# 用法：在Render Dashboard 中选择 "Deploy from YAML" 即可一键部署所有服务
+
+services:
+  # ==================== 后端服务 ====================
+  - type: web
+    name: gongzi-backend
+    runtime: docker
+    repo: https://gitee.com/your-username/gongzi-info-aggregator.git
+    branch: main
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    plan: free
+    envVars:
+      - key: APP_ENV
+        value: production
+      - key: DATABASE_URL
+        fromDatabase:
+          name: gongzi-db
+          property: connectionString
+      - key: REDIS_URL
+        fromService:
+          name: gongzi-redis
+          type: redis
+          property: connectionString
+      - key: SECRET_KEY
+        generateValue: true
+      - key: AI_API_KEY
+        value: ""
+      - key: CORS_ORIGINS
+        value: "*"
+    healthCheckPath: /health
+    autoDeploy: true
+
+  # ==================== 前端服务 ====================
+  - type: web
+    name: gongzi-frontend
+    runtime: static
+    repo: https://gitee.com/your-username/gongzi-info-aggregator.git
+    branch: main
+    buildCommand: cd frontend && npm install && npm run build
+    staticPublishPath: ./frontend/dist
+    plan: free
+    envVars:
+      - key: VITE_API_BASE_URL
+        fromService:
+          name: gongzi-backend
+          type: web
+          property: url
+    autoDeploy: true
+
+  # ==================== Redis 缓存 ====================
+  - type: redis
+    name: gongzi-redis
+    plan: free
+    maxmemoryPolicy: allkeys-lru
+
+# ==================== PostgreSQL 数据库 ====================
+databases:
+  - name: gongzi-db
+    databaseName: gongzi_info
+    user: gongzi
+    plan: free
+    ipAllowList:
+      - source: 0.0.0.0/0
+        description: Allow all (for development)
