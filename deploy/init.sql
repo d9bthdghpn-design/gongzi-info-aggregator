@@ -19,6 +19,7 @@ CREATE TABLE users (
     department      VARCHAR(128),
     position        VARCHAR(64),
     role            VARCHAR(32) NOT NULL DEFAULT 'viewer',  -- admin/editor/reviewer/viewer
+    password_hash   VARCHAR(256) NOT NULL DEFAULT '',       -- 密码哈希（bcrypt）
     sso_provider    VARCHAR(32),                            -- wecom/feishu
     sso_openid      VARCHAR(128),
     is_active       BOOLEAN NOT NULL DEFAULT true,
@@ -277,10 +278,8 @@ CREATE INDEX idx_topics_active ON topics(is_active, sort_order);
 -- 初始化数据
 -- ============================================================
 
--- 初始化管理员用户
-INSERT INTO users (username, email, full_name, role, is_active)
-VALUES ('admin', 'admin@gongzi.local', '系统管理员', 'admin', true)
-ON CONFLICT (username) DO NOTHING;
+-- 注意：管理员用户不在此处创建，请部署后运行 init_db.py 或通过 /api/v1/auth/register 接口创建
+-- 默认账号: admin / admin123
 
 -- 初始化业务分类标签
 INSERT INTO tag_dictionary (tag_type, tag_code, tag_name, tag_color, sort_order, keywords) VALUES
@@ -426,4 +425,8 @@ END;
 $$ LANGUAGE plpgsql;
 
 -- 完成
-COMMENT ON DATABASE gongzi_info IS '对公资讯聚合系统数据库';
+-- 注意：不同云数据库（如Supabase）的数据库名可能不是 gongzi_info，此处使用动态获取
+DO $$ BEGIN
+    EXECUTE 'COMMENT ON DATABASE ' || current_database() || ' IS ''对公资讯聚合系统数据库''';
+EXCEPTION WHEN OTHERS THEN NULL;
+END $$;

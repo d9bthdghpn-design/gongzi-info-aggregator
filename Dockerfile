@@ -4,7 +4,7 @@ WORKDIR /frontend
 COPY frontend/package*.json ./
 RUN npm ci
 COPY frontend/ ./
-RUN npm run build
+RUN npm run build:deploy
 
 # 后端运行阶段
 FROM python:3.11-slim
@@ -25,8 +25,11 @@ COPY backend/ .
 # 从前置构建阶段复制前端静态文件
 COPY --from=frontend-builder /frontend/dist ./static
 
+# 设置启动脚本权限
+RUN chmod +x start.sh
+
 # 暴露端口
 EXPOSE 8000
 
-# 启动命令
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "2"]
+# 启动命令（自动初始化数据库 + 启动服务）
+CMD ["./start.sh"]
