@@ -8,6 +8,9 @@ load_dotenv()
 
 BOT_NAME = "gongzi_crawler"
 
+# 指定 Twisted Reactor（与 crochet 兼容，Scrapy 2.17 默认 asyncioreactor 与 crochet 冲突）
+TWISTED_REACTOR = "twisted.internet.selectreactor.SelectReactor"
+
 SPIDER_MODULES = ["crawler.spiders"]
 NEWSPIDER_MODULE = "crawler.spiders"
 
