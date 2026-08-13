@@ -14,10 +14,30 @@ export interface NewsItem {
   publish_date?: string
   business_tip?: string
   quality_score: number
+  score_dimensions?: Record<string, number>  // 7维评分明细
+  event_cluster_id?: string  // 事件聚类ID
   status: string
   view_count: number
   lead_count: number
   created_at?: string
+}
+
+export interface EventCluster {
+  id: string
+  title: string
+  description?: string
+  event_type?: string
+  news_count: number
+  news_ids: string[]
+  source_channels: string[]
+  first_publish_date?: string
+  last_publish_date?: string
+  max_quality_score: number
+  created_at?: string
+}
+
+export interface EventClusterDetail extends EventCluster {
+  news_items: NewsItem[]
 }
 
 export interface NewsStats {
@@ -114,4 +134,19 @@ export function getTopicNews(
   return request.get(`/news/topics/${topicId}/news`, {
     params: { page, page_size: pageSize },
   })
+}
+
+// 获取事件聚类列表
+export function getEventClusters(
+  page = 1,
+  pageSize = 20
+): Promise<PageResponse<EventCluster>> {
+  return request.get('/news/events', {
+    params: { page, page_size: pageSize },
+  })
+}
+
+// 获取事件聚类详情
+export function getEventClusterDetail(clusterId: string): Promise<ApiResponse<EventClusterDetail>> {
+  return request.get(`/news/events/${clusterId}`)
 }

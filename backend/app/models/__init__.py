@@ -2,7 +2,7 @@
 数据模型统一导出
 """
 from app.models.user import User
-from app.models.news import NewsItem, TagDictionary, CrawlSource, Topic
+from app.models.news import NewsItem, TagDictionary, CrawlSource, Topic, EventCluster
 from app.models.lead import Lead, LeadFollowup
 from app.models.log import DailyBriefing, CrawlLog, AIProcessLog, OperationLog
 
@@ -12,6 +12,7 @@ __all__ = [
     "TagDictionary",
     "CrawlSource",
     "Topic",
+    "EventCluster",
     "Lead",
     "LeadFollowup",
     "DailyBriefing",

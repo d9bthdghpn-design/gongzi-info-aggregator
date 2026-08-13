@@ -84,7 +84,7 @@ def send_message(text: str) -> dict:
 
 
 def format_briefing_message(briefing) -> str:
-    """将简报格式化为推送文本"""
+    """将简报格式化为推送文本（每条资讯标注来源和发布日期）"""
     content = briefing.content_json or {}
     lines = []
     lines.append(f"📋 对公资讯早报 {briefing.brief_date}")
@@ -105,7 +105,12 @@ def format_briefing_message(briefing) -> str:
         for item in cat.get("items", [])[:5]:
             title = item.get("title", "")
             score = item.get("quality_score", 0)
-            lines.append(f"  [{score}分] {title[:50]}")
+            source = item.get("source_channel", "")
+            pub_date = item.get("publish_date", "")
+            # 格式: [评分] [来源] 标题（发布日期）
+            source_part = f"[{source}] " if source else ""
+            date_part = f"（{pub_date}）" if pub_date else ""
+            lines.append(f"  [{score}分] {source_part}{title[:50]}{date_part}")
         lines.append("")
 
     lines.append("详情请登录系统查看")
@@ -113,7 +118,7 @@ def format_briefing_message(briefing) -> str:
 
 
 def format_high_value_message(news) -> str:
-    """格式化高价值商机即时推送"""
+    """格式化高价值商机即时推送（标注来源和发布日期）"""
     lines = []
     lines.append("🔥 高价值商机提醒")
     lines.append("")
@@ -122,6 +127,8 @@ def format_high_value_message(news) -> str:
         lines.append(f"分类：{news.business_category}")
     if news.source_channel:
         lines.append(f"来源：{news.source_channel}")
+    if news.publish_date:
+        lines.append(f"发布日期：{news.publish_date}")
     if news.quality_score:
         lines.append(f"评分：{news.quality_score}")
     if news.business_tip:

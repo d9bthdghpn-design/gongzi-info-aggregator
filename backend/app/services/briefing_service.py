@@ -90,6 +90,8 @@ class BriefingService:
                 "quality_score": news.quality_score,
                 "area_tags": news.area_tags,
                 "industry_tags": news.industry_tags,
+                "source_channel": news.source_channel or "",
+                "publish_date": news.publish_date.isoformat() if news.publish_date else "",
             })
 
             if category not in category_counts:

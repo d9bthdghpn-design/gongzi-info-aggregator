@@ -12,10 +12,11 @@ from app.core.security import get_current_user, require_role
 from app.schemas.news import (
     NewsItemSchema, NewsItemDetailSchema, NewsItemAdminSchema,
     NewsItemUpdateSchema, NewsQuerySchema, NewsStatsSchema,
-    TagSchema, TopicSchema,
+    TagSchema, TopicSchema, EventClusterSchema, EventClusterDetailSchema,
 )
 from app.schemas.base import PageResponse, DataResponse, ListResponse
 from app.services import news_service, tag_service, topic_service, lead_service
+from app.services.cluster_service import EventClusterService
 from app.schemas.lead import LeadCreateSchema, LeadSchema
 
 router = APIRouter(prefix="/news", tags=["资讯管理"])
@@ -179,3 +180,47 @@ def get_topic_news(
         page_size=page_size,
         total_pages=total_pages,
     )
+
+
+# ==================== 事件聚类相关 ====================
+
+@router.get("/events", response_model=PageResponse[List[EventClusterSchema]])
+def get_event_clusters(
+    page: int = Query(1, ge=1),
+    page_size: int = Query(20, ge=1, le=100),
+    event_type: Optional[str] = None,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """获取事件聚类列表（多源发布同一政策的聚合）"""
+    service = EventClusterService(db)
+    clusters, total = service.get_clusters(page, page_size, event_type)
+    total_pages = (total + page_size - 1) // page_size
+
+    return PageResponse(
+        data=[EventClusterSchema.model_validate(c) for c in clusters],
+        total=total,
+        page=page,
+        page_size=page_size,
+        total_pages=total_pages,
+    )
+
+
+@router.get("/events/{cluster_id}", response_model=DataResponse[EventClusterDetailSchema])
+def get_event_cluster_detail(
+    cluster_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """获取事件聚类详情（含关联资讯列表）"""
+    service = EventClusterService(db)
+    cluster = service.get_cluster_detail(cluster_id)
+    if not cluster:
+        from app.core.exceptions import BusinessException
+        raise BusinessException("事件聚类不存在")
+
+    # 构造详情数据
+    detail = EventClusterDetailSchema.model_validate(cluster)
+    detail.news_items = [NewsItemSchema.model_validate(n) for n in getattr(cluster, 'news_items', [])]
+
+    return DataResponse(data=detail)

@@ -31,6 +31,8 @@ class NewsItemSchema(BaseSchema):
     publish_date: Optional[date] = None
     business_tip: Optional[str] = None
     quality_score: int = 0
+    score_dimensions: dict = {}  # 7维评分明细
+    event_cluster_id: Optional[str] = None  # 事件聚类ID
     status: str = "pending_review"
     view_count: int = 0
     lead_count: int = 0
@@ -125,3 +127,21 @@ class TopicSchema(BaseSchema):
     total_count: Optional[int] = None  # 专题下资讯总数
     month_new_count: Optional[int] = None  # 本月新增
     high_value_count: Optional[int] = None  # 高价值数量
+
+
+class EventClusterSchema(BaseSchema):
+    """事件聚类Schema"""
+    title: str
+    description: Optional[str] = None
+    event_type: Optional[str] = None
+    news_count: int = 0
+    news_ids: List[str] = []
+    source_channels: List[str] = []
+    first_publish_date: Optional[date] = None
+    last_publish_date: Optional[date] = None
+    max_quality_score: int = 0
+
+
+class EventClusterDetailSchema(EventClusterSchema):
+    """事件聚类详情Schema（含关联资讯列表）"""
+    news_items: List[NewsItemSchema] = []

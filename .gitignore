@@ -85,6 +85,7 @@ test_write.py
 # ---------- 本地运维脚本（含敏感信息，不提交）----------
 test_*.py
 find_*.py
+run_*.py
 run_crawl*.py
 run_ai_process.py
 add_new_sources.py
@@ -92,3 +93,7 @@ enable_*.py
 check_*.py
 list_sources.py
 migrate_supabase.py
+add_liangqu_source.py
+analyze_*.py
+extract_liangqu.py
+crawl_liangqu.py

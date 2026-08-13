@@ -3,6 +3,7 @@ AI服务 - 规则引擎 + 大模型处理
 """
 import hashlib
 import json
+import re
 import time
 from typing import Optional, List, Dict
 from sqlalchemy.orm import Session
@@ -150,7 +151,15 @@ class AIService:
         elif "启示" in system_prompt or "tip" in system_prompt.lower():
             return "💡 可重点关注相关企业，提供定制化金融服务方案。"
         elif "打分" in system_prompt or "score" in system_prompt.lower():
-            return "75"
+            return json.dumps({
+                "event_severity": 75,
+                "impact_scope": 70,
+                "asset_sensitivity": 80,
+                "credibility": 90,
+                "novelty": 65,
+                "timeliness": 80,
+                "confidence": 70,
+            }, ensure_ascii=False)
         return ""
 
     def classify_news(self, title: str, content: str) -> dict:
@@ -212,25 +221,73 @@ class AIService:
             logger.error(f"AI业务启示生成失败: {e}")
             return "💡 持续关注该企业动态，适时跟进营销。", 0, 0
 
-    def score_quality(self, title: str, content: str) -> int:
-        """AI质量打分（0-100分）"""
-        system_prompt = """你是一个银行商机价值评估专家。请根据资讯内容，评估这条资讯的对公业务商机价值，给出0-100的分数。
-评分维度：
-1. 涉及金额大小（30分）
-2. 企业规模/重要性（25分）
-3. 业务相关性（25分）
-4. 时效性（20分）
-只返回数字分数，不要有其他文字。"""
+    # 7维评分权重配置（参考Market-Impact-Radar模型）
+    SCORE_WEIGHTS = {
+        "event_severity": 0.20,      # 事件严重性：政策力度/资金规模/影响程度
+        "impact_scope": 0.20,        # 影响范围：覆盖企业数量/行业广度/区域范围
+        "asset_sensitivity": 0.15,   # 资产敏感度：对银行存贷款/投行/财资业务的直接关联度
+        "credibility": 0.15,         # 可信度：来源权威性/信息确定性/是否正式文件
+        "novelty": 0.10,             # 新颖度：是否新政策/新趋势/首次发布
+        "timeliness": 0.10,          # 时效性：发布时间近度/窗口期紧迫度
+        "confidence": 0.10,          # 置信度：信息完整度/可执行性/落地确定性
+    }
+
+    def score_quality(self, title: str, content: str) -> tuple:
+        """AI 7维质量打分
+        返回: (total_score: int, dimensions: dict, input_tokens: int, output_tokens: int)
+        """
+        system_prompt = """你是一个银行对公业务商机价值评估专家。请根据资讯内容，从以下7个维度评估这条资讯的对公业务商机价值，每个维度0-100分：
+
+1. event_severity（事件严重性）：政策力度、资金规模、影响程度，分值越高表示事件越重大
+2. impact_scope（影响范围）：覆盖企业数量、行业广度、区域范围，分值越高表示影响面越广
+3. asset_sensitivity（资产敏感度）：对银行存贷款、投行、财资、供应链等业务的直接关联度，分值越高表示银行业务机会越直接
+4. credibility（可信度）：来源权威性、信息确定性、是否正式发文，分值越高表示信息越可靠
+5. novelty（新颖度）：是否新政策、新趋势、首次发布，分值越高表示越新颖
+6. timeliness（时效性）：发布时间近度、窗口期紧迫度，分值越高表示越及时
+7. confidence（置信度）：信息完整度、可执行性、落地确定性，分值越高表示越确定可操作
+
+请严格以JSON格式返回，格式如下：
+{"event_severity": 80, "impact_scope": 70, "asset_sensitivity": 90, "credibility": 95, "novelty": 60, "timeliness": 85, "confidence": 75}
+只返回JSON，不要有其他文字。"""
 
         user_content = f"标题：{title}\n内容：{content[:2000]}"
 
         try:
             result, in_tok, out_tok = self._call_ai(system_prompt, user_content)
-            score = int(result.strip())
-            return max(0, min(100, score)), in_tok, out_tok
+
+            # 提取JSON部分（处理markdown代码块等情况）
+            result = result.strip()
+            if result.startswith("```"):
+                # 去除 ```json 或 ``` 标记
+                result = re.sub(r'^```(?:json)?\s*', '', result)
+                result = re.sub(r'\s*```$', '', result)
+                result = result.strip()
+
+            # 尝试找到第一个{和最后一个}之间的内容
+            start = result.find('{')
+            end = result.rfind('}')
+            if start != -1 and end != -1 and end > start:
+                result = result[start:end + 1]
+
+            dimensions = json.loads(result)
+
+            # 计算加权总分
+            total = 0
+            for dim, weight in self.SCORE_WEIGHTS.items():
+                score = dimensions.get(dim, 50)
+                score = max(0, min(100, int(score)))
+                dimensions[dim] = score
+                total += score * weight
+
+            total_score = int(round(total))
+            total_score = max(0, min(100, total_score))
+
+            return total_score, dimensions, in_tok, out_tok
         except Exception as e:
-            logger.error(f"AI质量打分失败: {e}")
-            return 50, 0, 0
+            logger.error(f"AI 7维打分失败: {e}")
+            # 失败时返回默认中等分数
+            default_dims = {dim: 50 for dim in self.SCORE_WEIGHTS}
+            return 50, default_dims, 0, 0
 
     def process_news(self, db: Session, news_id: str) -> bool:
         """完整处理一条资讯"""
@@ -265,9 +322,10 @@ class AIService:
             input_tokens_total += in_tok
             output_tokens_total += out_tok
 
-            # 4. 质量打分
-            score, in_tok, out_tok = self.score_quality(news.title, news.content_raw or "")
+            # 4. 7维质量打分
+            score, dimensions, in_tok, out_tok = self.score_quality(news.title, news.content_raw or "")
             news.quality_score = score
+            news.score_dimensions = dimensions
             input_tokens_total += in_tok
             output_tokens_total += out_tok
 

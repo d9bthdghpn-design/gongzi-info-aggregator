@@ -37,7 +37,9 @@ class NewsItem(Base):
     source_url = Column(String(1024), unique=True)  # 原始URL(仅后台)
     publish_date = Column(Date, index=True)  # 发布日期
     business_tip = Column(Text)  # AI生成的业务启示
-    quality_score = Column(Integer, default=0)  # 商机价值评分 0-100
+    quality_score = Column(Integer, default=0)  # 商机价值评分 0-100（7维加权总分）
+    score_dimensions = Column(JSON_TYPE, default=dict)  # 7维评分明细: {event_severity, impact_scope, asset_sensitivity, credibility, novelty, timeliness, confidence}
+    event_cluster_id = Column(String(36), index=True)  # 事件聚类ID（关联event_clusters表）
     dedup_hash = Column(String(64), unique=True)  # 内容去重哈希
     status = Column(String(32), nullable=False, default="pending_review", index=True)
     # pending_review/published/rejected/ai_failed
@@ -117,3 +119,24 @@ class Topic(Base):
 
     def __repr__(self):
         return f"<Topic {self.title}>"
+
+
+class EventCluster(Base):
+    """事件聚类表 - 同一政策/事件多源发布自动聚合"""
+    __tablename__ = "event_clusters"
+
+    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    title = Column(String(512), nullable=False)  # 事件标题（取最早/最高质量资讯标题）
+    description = Column(Text)  # 事件描述
+    event_type = Column(String(32), index=True)  # 事件类型: policy/regulation/announcement/other
+    news_count = Column(Integer, default=0)  # 关联资讯数量
+    news_ids = Column(JSON_TYPE, default=list)  # 关联资讯ID列表
+    source_channels = Column(JSON_TYPE, default=list)  # 涉及的来源渠道列表
+    first_publish_date = Column(Date, index=True)  # 最早发布日期
+    last_publish_date = Column(Date)  # 最晚发布日期
+    max_quality_score = Column(Integer, default=0)  # 最高质量分
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+
+    def __repr__(self):
+        return f"<EventCluster {self.title[:30]}>"
