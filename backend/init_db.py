@@ -4,7 +4,11 @@
 import sys
 import os
 import uuid
-from datetime import datetime, date
+from datetime import datetime, date, timedelta, timezone
+
+
+def _now():
+    return datetime.now(timezone.utc)
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -41,8 +45,8 @@ def init_db():
                 department="信息技术部",
                 position="系统管理员",
                 is_active=True,
-                created_at=datetime.utcnow(),
-                updated_at=datetime.utcnow(),
+                created_at=_now(),
+                updated_at=_now(),
             )
             db.add(admin)
             db.commit()
@@ -64,8 +68,8 @@ def init_db():
                 department="公司业务部",
                 position="客户经理",
                 is_active=True,
-                created_at=datetime.utcnow(),
-                updated_at=datetime.utcnow(),
+                created_at=_now(),
+                updated_at=_now(),
             )
             db.add(viewer)
             db.commit()
@@ -114,8 +118,8 @@ def init_db():
                     tag_color=color,
                     sort_order=order,
                     is_active=True,
-                    created_at=datetime.utcnow(),
-                    updated_at=datetime.utcnow(),
+                    created_at=_now(),
+                    updated_at=_now(),
                 )
                 db.add(tag)
             db.commit()
@@ -123,13 +127,187 @@ def init_db():
         else:
             print("  标签数据已存在，跳过")
 
-        # 4. 插入示例采集渠道（如果不存在）
+        # 4. 插入采集源（如果不存在）—— P0 五个权威源
         if db.query(CrawlSource).count() == 0:
-            print("正在插入采集渠道...")
+            print("正在插入采集源...")
             sources = [
-                {"name": "朝阳区政府官网", "source_type": "gov", "crawl_type": "list", "entry_url": "https://www.bjchy.gov.cn/", "priority": 1},
-                {"name": "海淀区政府官网", "source_type": "gov", "crawl_type": "list", "entry_url": "https://www.bjhd.gov.cn/", "priority": 1},
-                {"name": "中国政府采购网", "source_type": "bidding", "crawl_type": "list", "entry_url": "http://www.ccgp.gov.cn/", "priority": 2},
+                {
+                    "name": "中国政府采购网",
+                    "source_type": "bidding",
+                    "crawl_type": "web",
+                    "entry_url": "http://www.ccgp.gov.cn/cggg/dfgg/",
+                    "area_scope": [],
+                    "industry_scope": ["government"],
+                    "priority": 10,
+                    "selector_config": {
+                        "list_selector": "ul.c_list_bid li",
+                        "title_selector": "a",
+                        "link_selector": "a@href",
+                        "date_selector": "",
+                        "date_regex": True,
+                        "content_selector": ".vF_detail_content",
+                        "next_page_selector": ".next a, a.next",
+                    },
+                },
+                {
+                    "name": "北京市政府采购网",
+                    "source_type": "bidding",
+                    "crawl_type": "web",
+                    "entry_url": "http://www.ccgp-beijing.gov.cn/xxgg/qjxxgg/",
+                    "area_scope": ["chaoyang", "haidian"],
+                    "industry_scope": ["government"],
+                    "priority": 9,
+                    "selector_config": {
+                        "list_selector": ".list li, ul.list li, .news-list li, ul.news-list li",
+                        "title_selector": "a",
+                        "link_selector": "a@href",
+                        "date_selector": ".date, span.time, span.date",
+                        "date_regex": True,
+                        "content_selector": ".article-content, .TRS_Editor, .content, .vF_detail_content",
+                        "next_page_selector": ".next a, a.next",
+                    },
+                },
+                {
+                    "name": "北京市公共资源交易服务平台",
+                    "source_type": "bidding",
+                    "crawl_type": "web",
+                    "entry_url": "https://ggzyfw.beijing.gov.cn/",
+                    "area_scope": ["chaoyang", "haidian", "fengtai"],
+                    "industry_scope": ["government"],
+                    "priority": 9,
+                    "selector_config": {
+                        "list_selector": ".news-list li, .list li, .jyxx-list li, ul li",
+                        "title_selector": "a",
+                        "link_selector": "a@href",
+                        "date_selector": ".date, .time, span.date, span",
+                        "date_regex": True,
+                        "content_selector": ".article-content, .content, .detail-content, .TRS_Editor, .con",
+                        "next_page_selector": ".next a, a.next",
+                    },
+                },
+                {
+                    "name": "朝阳区政府",
+                    "source_type": "gov",
+                    "crawl_type": "web",
+                    "entry_url": "http://www.bjchy.gov.cn/",
+                    "area_scope": ["chaoyang"],
+                    "industry_scope": ["government"],
+                    "priority": 8,
+                    "selector_config": {
+                        "list_selector": "div.news_text li",
+                        "title_selector": "a",
+                        "link_selector": "a@href",
+                        "date_selector": "span",
+                        "date_regex": True,
+                        "content_selector": ".con, .content_article, .TRS_Editor, .article-content",
+                        "next_page_selector": ".next-page a, .next a",
+                    },
+                },
+                {
+                    "name": "北京市财政局",
+                    "source_type": "gov",
+                    "crawl_type": "web",
+                    "entry_url": "https://czj.beijing.gov.cn/zwxx/tztg/",
+                    "area_scope": ["chaoyang", "haidian", "fengtai"],
+                    "industry_scope": ["government", "finance"],
+                    "priority": 8,
+                    "selector_config": {
+                        "list_selector": "div.ul-back li",
+                        "title_selector": "a",
+                        "link_selector": "a@href",
+                        "date_selector": "span.docRelTime",
+                        "date_regex": True,
+                        "content_selector": ".view.TRS_UEDITOR, .TRS_Editor, .article-content, .content",
+                        "next_page_selector": ".next a, a.next",
+                    },
+                },
+                # ===== P1 源：央国企官网（默认未启用，验证选择器后开启）=====
+                {
+                    "name": "国家电网",
+                    "source_type": "enterprise",
+                    "crawl_type": "web",
+                    "entry_url": "https://www.sgcc.com.cn/html/sgcc_main/col2016010004/column_2016010004_1.shtml",
+                    "area_scope": [],
+                    "industry_scope": ["energy"],
+                    "priority": 6,
+                    "is_active": False,
+                    "selector_config": {
+                        "list_selector": ".news-list li, .list li, ul li",
+                        "title_selector": "a",
+                        "link_selector": "a@href",
+                        "date_selector": ".date, span.time, span",
+                        "date_regex": True,
+                        "content_selector": ".article-content, .TRS_Editor, .content, .detail",
+                        "next_page_selector": ".next a, a.next",
+                    },
+                },
+                {
+                    "name": "中国建筑集团",
+                    "source_type": "enterprise",
+                    "crawl_type": "web",
+                    "entry_url": "https://www.cscec.com/zgjzww/300419/300420/index.html",
+                    "area_scope": [],
+                    "industry_scope": ["construction"],
+                    "priority": 6,
+                    "is_active": False,
+                    "selector_config": {
+                        "list_selector": ".news-list li, .list li, ul li",
+                        "title_selector": "a",
+                        "link_selector": "a@href",
+                        "date_selector": ".date, span.time, span",
+                        "date_regex": True,
+                        "content_selector": ".article-content, .TRS_Editor, .content, .detail",
+                        "next_page_selector": ".next a, a.next",
+                    },
+                },
+                {
+                    "name": "北京市国资委",
+                    "source_type": "gov",
+                    "crawl_type": "web",
+                    "entry_url": "https://gzw.beijing.gov.cn/",
+                    "area_scope": ["chaoyang", "haidian", "fengtai"],
+                    "industry_scope": ["government", "finance"],
+                    "priority": 7,
+                    "is_active": False,
+                    "selector_config": {
+                        "list_selector": ".news-list li, .list li, ul li",
+                        "title_selector": "a",
+                        "link_selector": "a@href",
+                        "date_selector": ".date, span.time, span",
+                        "date_regex": True,
+                        "content_selector": ".article-content, .TRS_Editor, .content, .detail",
+                        "next_page_selector": ".next a, a.next",
+                    },
+                },
+                # ===== P1 源：微信公众号（默认未启用，需手动提交文章URL）=====
+                {
+                    "name": "北京发布（微信公众号）",
+                    "source_type": "gov",
+                    "crawl_type": "wechat",
+                    "entry_url": "",
+                    "area_scope": ["chaoyang", "haidian", "fengtai"],
+                    "industry_scope": ["government"],
+                    "priority": 7,
+                    "is_active": False,
+                    "selector_config": {
+                        "article_urls": "",
+                        "note": "微信公众号需手动填写文章URL（逗号分隔），或通过RSSHub获取RSS后走rss类型",
+                    },
+                },
+                {
+                    "name": "朝阳发改（微信公众号）",
+                    "source_type": "gov",
+                    "crawl_type": "wechat",
+                    "entry_url": "",
+                    "area_scope": ["chaoyang"],
+                    "industry_scope": ["government"],
+                    "priority": 6,
+                    "is_active": False,
+                    "selector_config": {
+                        "article_urls": "",
+                        "note": "微信公众号需手动填写文章URL（逗号分隔）",
+                    },
+                },
             ]
             for s in sources:
                 source = CrawlSource(
@@ -138,17 +316,20 @@ def init_db():
                     source_type=s["source_type"],
                     crawl_type=s["crawl_type"],
                     entry_url=s["entry_url"],
+                    area_scope=s.get("area_scope", []),
+                    industry_scope=s.get("industry_scope", []),
                     crawl_interval_hours=24,
                     priority=s["priority"],
-                    is_active=True,
-                    created_at=datetime.utcnow(),
-                    updated_at=datetime.utcnow(),
+                    selector_config=s.get("selector_config", {}),
+                    is_active=s.get("is_active", True),
+                    created_at=_now(),
+                    updated_at=_now(),
                 )
                 db.add(source)
             db.commit()
-            print(f"  插入 {len(sources)} 个采集渠道")
+            print(f"  插入 {len(sources)} 个采集源")
         else:
-            print("  采集渠道已存在，跳过")
+            print("  采集源已存在，跳过")
 
         # 5. 插入示例资讯（如果不存在）
         if db.query(NewsItem).count() == 0:
@@ -233,15 +414,15 @@ def init_db():
                     source_type=news["source_type"],
                     source_channel=news["source_channel"],
                     source_url=f"https://example.com/news/{i+1}",
-                    publish_date=date.today(),
+                    publish_date=date.today() - timedelta(days=i),
                     business_tip=news["business_tip"],
                     quality_score=news["quality_score"],
                     dedup_hash=f"sample_{i}",
                     status=news["status"],
                     view_count=i * 10 + 5,
                     lead_count=i,
-                    created_at=datetime.utcnow(),
-                    updated_at=datetime.utcnow(),
+                    created_at=_now(),
+                    updated_at=_now(),
                 )
                 db.add(item)
             db.commit()
@@ -266,8 +447,8 @@ def init_db():
                     sort_order=t["sort_order"],
                     is_active=True,
                     created_by=admin.id,
-                    created_at=datetime.utcnow(),
-                    updated_at=datetime.utcnow(),
+                    created_at=_now(),
+                    updated_at=_now(),
                 )
                 db.add(topic)
             db.commit()

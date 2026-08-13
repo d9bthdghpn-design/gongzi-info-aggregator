@@ -15,7 +15,8 @@ from app.schemas.news import (
     TagSchema, TopicSchema,
 )
 from app.schemas.base import PageResponse, DataResponse, ListResponse
-from app.services import news_service, tag_service, topic_service
+from app.services import news_service, tag_service, topic_service, lead_service
+from app.schemas.lead import LeadCreateSchema, LeadSchema
 
 router = APIRouter(prefix="/news", tags=["资讯管理"])
 
@@ -104,6 +105,24 @@ def audit_news(
     """审核资讯（审核员/管理员）"""
     news = news_service.audit_news(db, news_id, status, comment, str(current_user.id))
     return DataResponse(data=NewsItemAdminSchema.model_validate(news))
+
+
+@router.post("/{news_id}/to-lead", response_model=DataResponse[LeadSchema])
+def convert_to_lead(
+    news_id: str,
+    obj_in: LeadCreateSchema,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """将资讯转为线索（自动关联资讯ID）"""
+    news = news_service.get(db, news_id)
+    if not news:
+        return DataResponse(code=404, message="资讯不存在")
+
+    # 强制关联资讯
+    obj_in.source_news_id = news_id
+    lead = lead_service.create_lead(db, obj_in, str(current_user.id))
+    return DataResponse(data=LeadSchema.model_validate(lead))
 
 
 # ==================== 标签相关 ====================

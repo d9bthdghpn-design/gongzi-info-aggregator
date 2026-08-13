@@ -165,10 +165,11 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { showToast } from 'vant'
 import { createLead } from '@/api/leads'
+import { getNewsDetail } from '@/api/news'
 import { businessCategoryMap, industryTagMap, areaTagMap } from '@/utils/format'
 
 const router = useRouter()
@@ -201,11 +202,33 @@ const businessOptions = computed(() => {
 const industryOptions = industryTagMap
 const areaOptions = areaTagMap
 
-onMounted(() => {
+onMounted(async () => {
   const newsId = route.query.news_id as string
   if (newsId) {
     form.source_news_id = newsId
     form.lead_source = 'news'
+    // 拉取资讯详情，预填项目描述
+    try {
+      const res = await getNewsDetail(newsId)
+      if (res.code === 0 && res.data) {
+        const newsData = res.data
+        // 项目描述用资讯摘要，企业名称留空由用户填写
+        form.project_desc = newsData.content_summary || newsData.title || ''
+        // 预填区域和行业
+        if (newsData.area_tags && newsData.area_tags.length > 0) {
+          form.area = newsData.area_tags[0]
+        }
+        if (newsData.industry_tags && newsData.industry_tags.length > 0) {
+          form.industry = newsData.industry_tags[0]
+        }
+        // 预填意向业务
+        if (newsData.business_category) {
+          form.intent_business = [newsData.business_category]
+        }
+      }
+    } catch (e) {
+      console.error('获取资讯详情失败:', e)
+    }
   }
 })
 
@@ -247,9 +270,7 @@ async function handleSubmit() {
 }
 </script>
 
-<script lang="ts">
-import { computed } from 'vue'
-</script>
+
 
 <style lang="scss" scoped>
 .lead-create-page {

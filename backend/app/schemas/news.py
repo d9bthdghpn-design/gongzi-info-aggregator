@@ -111,6 +111,7 @@ class NewsStatsSchema(BaseModel):
     enterprise_count: int = 0
     high_value_count: int = 0
     today_new_trend: float = 0.0  # 环比变化率
+    last_updated: Optional[str] = None  # 最后更新时间
 
 
 class TopicSchema(BaseSchema):

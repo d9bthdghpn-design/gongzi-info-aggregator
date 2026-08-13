@@ -6,12 +6,13 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.exceptions import RequestValidationError
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, JSONResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
 from contextlib import asynccontextmanager
+from sqlalchemy import text
 
 from app.config import settings
-from app.database import engine, Base
+from app.database import engine, Base, SessionLocal
 from app.api import api_router
 from app.core.exceptions import (
     BusinessException,
@@ -25,12 +26,11 @@ from app.core.exceptions import (
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """应用生命周期管理"""
-    # 启动时
     print(f"🚀 {settings.APP_NAME} v{settings.APP_VERSION} 启动中...")
-    # 确保数据库表存在（开发环境用，生产环境用Alembic）
-    # Base.metadata.create_all(bind=engine)
+    # 开发环境自动建表（生产环境用 Alembic）
+    if settings.ENVIRONMENT != "production":
+        Base.metadata.create_all(bind=engine)
     yield
-    # 关闭时
     print(f"👋 {settings.APP_NAME} 关闭")
 
 
@@ -43,10 +43,13 @@ app = FastAPI(
 )
 
 # CORS中间件
+_cors_origins = settings.CORS_ORIGINS
+# 通配符 origin 不能与 allow_credentials 同时使用
+_allow_credentials = "*" not in _cors_origins
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.CORS_ORIGINS,
-    allow_credentials=True,
+    allow_origins=_cors_origins,
+    allow_credentials=_allow_credentials,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -63,12 +66,26 @@ app.include_router(api_router, prefix=settings.API_V1_PREFIX)
 
 @app.get("/health", tags=["系统"])
 def health_check():
-    """健康检查"""
-    return {
-        "status": "ok",
-        "app": settings.APP_NAME,
-        "version": settings.APP_VERSION,
-    }
+    """健康检查（含数据库连通性）"""
+    db_ok = False
+    try:
+        db = SessionLocal()
+        db.execute(text("SELECT 1"))
+        db.close()
+        db_ok = True
+    except Exception:
+        db_ok = False
+
+    status = "ok" if db_ok else "degraded"
+    return JSONResponse(
+        status_code=200 if db_ok else 503,
+        content={
+            "status": status,
+            "app": settings.APP_NAME,
+            "version": settings.APP_VERSION,
+            "database": "ok" if db_ok else "error",
+        },
+    )
 
 
 # 挂载静态文件（前端生产构建产物）
@@ -79,10 +96,9 @@ if os.path.exists(static_dir):
     @app.get("/{full_path:path}")
     async def spa_fallback(request: Request, full_path: str):
         """SPA单页应用路由回退，所有非API路径都返回index.html"""
-        # API路径不处理
         if full_path.startswith("api/") or full_path.startswith("docs") or full_path.startswith("openapi.json"):
             raise StarletteHTTPException(status_code=404, detail="Not Found")
-        
+
         index_file = os.path.join(static_dir, "index.html")
         if os.path.exists(index_file):
             return FileResponse(index_file)

@@ -2,11 +2,10 @@
 核心安全模块 - JWT认证、密码哈希
 """
 import hashlib
-import base64
-import os
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Optional
 
+import bcrypt
 import jwt
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
@@ -19,37 +18,42 @@ from app.models import User
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl=f"{settings.API_V1_PREFIX}/auth/login")
 
 
-def _hash_password_sha256(password: str, salt: str) -> str:
-    """使用SHA256 + salt哈希密码"""
-    return hashlib.sha256(f"{salt}{password}".encode()).hexdigest()
-
-
 def verify_password(plain_password: str, hashed_password: str) -> bool:
-    """验证密码
-    格式：salt$hash
-    """
+    """验证密码，支持 bcrypt（新）和旧版 SHA256+salt 哈希（平滑过渡）"""
+    if not hashed_password:
+        return False
     try:
-        salt, hash_val = hashed_password.split("$", 1)
-        computed = _hash_password_sha256(plain_password, salt)
-        return computed == hash_val
+        # bcrypt 哈希以 $2a$ / $2b$ / $2y$ 开头
+        if hashed_password.startswith("$2"):
+            return bcrypt.checkpw(
+                plain_password.encode("utf-8"),
+                hashed_password.encode("utf-8"),
+            )
+        # 旧版 SHA256 格式：salt$hash
+        if "$" in hashed_password:
+            salt, hash_val = hashed_password.rsplit("$", 1)
+            computed = hashlib.sha256(f"{salt}{plain_password}".encode()).hexdigest()
+            return computed == hash_val
+        return False
     except Exception:
         return False
 
 
 def get_password_hash(password: str) -> str:
-    """生成密码哈希"""
-    salt = base64.b64encode(os.urandom(16)).decode()
-    hash_val = _hash_password_sha256(password, salt)
-    return f"{salt}${hash_val}"
+    """生成 bcrypt 密码哈希"""
+    return bcrypt.hashpw(
+        password.encode("utf-8"),
+        bcrypt.gensalt(),
+    ).decode("utf-8")
 
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
     """创建访问Token"""
     to_encode = data.copy()
     if expires_delta:
-        expire = datetime.utcnow() + expires_delta
+        expire = datetime.now(timezone.utc) + expires_delta
     else:
-        expire = datetime.utcnow() + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+        expire = datetime.now(timezone.utc) + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
     to_encode.update({"exp": expire, "type": "access"})
     encoded_jwt = jwt.encode(to_encode, settings.JWT_SECRET_KEY, algorithm=settings.JWT_ALGORITHM)
     return encoded_jwt
@@ -58,7 +62,7 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -
 def create_refresh_token(data: dict) -> str:
     """创建刷新Token"""
     to_encode = data.copy()
-    expire = datetime.utcnow() + timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)
+    expire = datetime.now(timezone.utc) + timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)
     to_encode.update({"exp": expire, "type": "refresh"})
     encoded_jwt = jwt.encode(to_encode, settings.JWT_SECRET_KEY, algorithm=settings.JWT_ALGORITHM)
     return encoded_jwt
@@ -105,7 +109,7 @@ def get_current_active_user(current_user: User = Depends(get_current_user)) -> U
 
 
 def require_role(required_role: str):
-    """角色权限装饰器"""
+    """角色权限依赖：要求当前用户角色 >= required_role"""
     def role_checker(current_user: User = Depends(get_current_user)) -> User:
         role_hierarchy = {"viewer": 1, "reviewer": 2, "editor": 3, "admin": 4}
         if role_hierarchy.get(current_user.role, 0) < role_hierarchy.get(required_role, 99):

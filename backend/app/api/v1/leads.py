@@ -14,8 +14,25 @@ from app.schemas.lead import (
 )
 from app.schemas.base import PageResponse, DataResponse, ListResponse
 from app.services import lead_service, lead_followup_service
+from app.core.exceptions import BusinessException
 
 router = APIRouter(prefix="/leads", tags=["线索管理"])
+
+
+def _can_access_lead(lead, current_user: User) -> bool:
+    """判断当前用户是否有权查看/操作该线索：本人、公海池、管理员"""
+    if current_user.role == "admin":
+        return True
+    if lead.public_pool:
+        return True
+    return str(lead.assignee_id) == str(current_user.id)
+
+
+def _can_edit_lead(lead, current_user: User) -> bool:
+    """判断当前用户是否有权修改该线索：本人或管理员"""
+    if current_user.role == "admin":
+        return True
+    return str(lead.assignee_id) == str(current_user.id)
 
 
 @router.get("", response_model=PageResponse[List[LeadSchema]])
@@ -103,6 +120,8 @@ def get_lead_detail(
     lead = lead_service.get(db, lead_id)
     if not lead:
         return DataResponse(code=404, message="线索不存在")
+    if not _can_access_lead(lead, current_user):
+        raise BusinessException(code=403, message="无权查看该线索")
     return DataResponse(data=LeadSchema.model_validate(lead))
 
 
@@ -128,6 +147,8 @@ def update_lead(
     lead = lead_service.get(db, lead_id)
     if not lead:
         return DataResponse(code=404, message="线索不存在")
+    if not _can_edit_lead(lead, current_user):
+        raise BusinessException(code=403, message="无权修改该线索")
 
     updated = lead_service.update(db, db_obj=lead, obj_in=obj_in)
     return DataResponse(data=LeadSchema.model_validate(updated))
@@ -179,6 +200,12 @@ def get_lead_followups(
     current_user: User = Depends(get_current_user),
 ):
     """获取线索跟进记录"""
+    lead = lead_service.get(db, lead_id)
+    if not lead:
+        return DataResponse(code=404, message="线索不存在")
+    if not _can_access_lead(lead, current_user):
+        raise BusinessException(code=403, message="无权查看该线索的跟进记录")
+
     items, total = lead_followup_service.get_followups(db, lead_id, page, page_size)
     total_pages = (total + page_size - 1) // page_size
 
@@ -199,5 +226,11 @@ def add_lead_followup(
     current_user: User = Depends(get_current_user),
 ):
     """添加跟进记录"""
+    lead = lead_service.get(db, lead_id)
+    if not lead:
+        return DataResponse(code=404, message="线索不存在")
+    if not _can_edit_lead(lead, current_user):
+        raise BusinessException(code=403, message="无权跟进该线索")
+
     followup = lead_followup_service.add_followup(db, lead_id, obj_in, str(current_user.id))
     return DataResponse(data=LeadFollowupSchema.model_validate(followup))

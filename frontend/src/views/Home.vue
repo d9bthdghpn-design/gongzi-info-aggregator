@@ -5,7 +5,7 @@
       <div class="header-top">
         <div>
           <div class="page-title">对公资讯聚合</div>
-          <div class="page-subtitle">{{ todayStr }} · 实时更新</div>
+          <div class="page-subtitle">{{ todayStr }} · 最后更新 {{ stats?.last_updated || '—' }}</div>
         </div>
         <div class="header-actions">
           <span class="search-icon" @click="showSearch = true">🔍</span>

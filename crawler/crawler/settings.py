@@ -11,16 +11,15 @@ BOT_NAME = "gongzi_crawler"
 SPIDER_MODULES = ["crawler.spiders"]
 NEWSPIDER_MODULE = "crawler.spiders"
 
-# 遵守robots.txt
+# 遵守robots.txt（政府站通常允许，如个别站禁止可在 spider 中覆盖）
 ROBOTSTXT_OBEY = True
 
-# 并发请求数
-CONCURRENT_REQUESTS = 16
-CONCURRENT_REQUESTS_PER_DOMAIN = 4
-CONCURRENT_REQUESTS_PER_IP = 4
+# 并发请求数（政府站调低，避免被封）
+CONCURRENT_REQUESTS = 8
+CONCURRENT_REQUESTS_PER_DOMAIN = 2
 
 # 下载延迟
-DOWNLOAD_DELAY = float(os.getenv("CRAWL_DELAY", "1.0"))
+DOWNLOAD_DELAY = float(os.getenv("CRAWL_DELAY", "2.0"))
 RANDOMIZE_DOWNLOAD_DELAY = True
 
 # 禁用Cookie
@@ -73,14 +72,28 @@ HTTPCACHE_DIR = "httpcache"
 LOG_LEVEL = "INFO"
 LOG_FORMAT = "%(asctime)s [%(name)s] %(levelname)s: %(message)s"
 
-# Redis配置（去重队列）
-REDIS_URL = os.getenv("REDIS_URL", "redis://redis:6379/0")
+# Redis配置（去重队列，可选）
+REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379/0")
 
 # 数据库配置
-DATABASE_URL = os.getenv(
-    "DATABASE_URL",
-    "postgresql+psycopg2://gongzi:gongzi123@postgres:5432/gongzi_info",
-)
+# SQLAlchemy 格式（给后端用）
+DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./gongzi_info.db")
+
+
+def _get_psycopg2_dsn() -> str:
+    """将 SQLAlchemy 格式的 DATABASE_URL 转为 psycopg2 可识别的 DSN"""
+    url = DATABASE_URL
+    if url.startswith("postgresql+"):
+        # postgresql+psycopg2://user:pass@host:port/dbname → postgresql://user:pass@host:port/dbname
+        url = "postgresql://" + url.split("://", 1)[1]
+    if url.startswith("sqlite"):
+        # SQLite 不被 psycopg2 支持，返回空，Pipeline 会走 SQLAlchemy 路线
+        return ""
+    return url
+
+
+# psycopg2 原生 DSN（给爬虫 Pipeline 用）
+PSYCOPG2_DSN = _get_psycopg2_dsn()
 
 # 代理池配置
 PROXY_POOL_ENABLED = os.getenv("PROXY_POOL_ENABLED", "false").lower() == "true"

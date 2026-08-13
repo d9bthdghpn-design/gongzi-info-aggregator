@@ -1,18 +1,22 @@
 # Render 一键部署配置
 # 用法：在Render Dashboard 中选择 "Deploy from YAML" 即可一键部署所有服务
+#
+# 注意：Render 免费版无法运行 Celery Worker/Beat 后台进程，
+# 因此采集、AI处理、定时简报推送等异步功能在 Render 免费版上不可用。
+# 如需完整功能，请使用 docker-compose 部署（见 docker-compose.yml）。
 
 services:
   # ==================== 后端服务 ====================
   - type: web
     name: gongzi-backend
     runtime: docker
-    repo: https://gitee.com/your-username/gongzi-info-aggregator.git
+    repo: https://github.com/d9bthdghpn-design/gongzi-info-aggregator.git
     branch: main
     dockerfilePath: ./backend/Dockerfile
     dockerContext: ./backend
     plan: free
     envVars:
-      - key: APP_ENV
+      - key: ENVIRONMENT
         value: production
       - key: DATABASE_URL
         fromDatabase:
@@ -23,12 +27,30 @@ services:
           name: gongzi-redis
           type: redis
           property: connectionString
-      - key: SECRET_KEY
+      - key: CELERY_BROKER_URL
+        fromService:
+          name: gongzi-redis
+          type: redis
+          property: connectionString
+      - key: CELERY_RESULT_BACKEND
+        fromService:
+          name: gongzi-redis
+          type: redis
+          property: connectionString
+      - key: JWT_SECRET_KEY
         generateValue: true
+      - key: CORS_ORIGINS
+        value: "https://gongzi-frontend.onrender.com"
       - key: AI_API_KEY
         value: ""
-      - key: CORS_ORIGINS
-        value: "*"
+      - key: AI_BASE_URL
+        value: ""
+      - key: AI_MODEL
+        value: "gpt-3.5-turbo"
+      - key: FEISHU_WEBHOOK_URL
+        value: ""
+      - key: WECOM_WEBHOOK_URL
+        value: ""
     healthCheckPath: /health
     autoDeploy: true
 
@@ -36,7 +58,7 @@ services:
   - type: web
     name: gongzi-frontend
     runtime: static
-    repo: https://gitee.com/your-username/gongzi-info-aggregator.git
+    repo: https://github.com/d9bthdghpn-design/gongzi-info-aggregator.git
     branch: main
     buildCommand: cd frontend && npm install && npm run build
     staticPublishPath: ./frontend/dist
@@ -48,6 +70,10 @@ services:
           type: web
           property: url
     autoDeploy: true
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
 
   # ==================== Redis 缓存 ====================
   - type: redis

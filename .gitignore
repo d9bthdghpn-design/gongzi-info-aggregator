@@ -75,3 +75,9 @@ crawler/data/
 *.tmp
 *.bak
 *.cache
+
+# ---------- 本地测试 ----------
+.workbuddy/
+test_crawl.py
+verify_crawl.py
+test_write.py

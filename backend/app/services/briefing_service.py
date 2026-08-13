@@ -1,7 +1,7 @@
 """
 简报服务 - 每日简报生成与管理
 """
-from datetime import datetime, date
+from datetime import datetime, date, timezone
 from typing import Optional, List
 from sqlalchemy import and_, func, desc
 from sqlalchemy.orm import Session
@@ -129,7 +129,7 @@ class BriefingService:
             raise BusinessException(code=404, message="简报不存在")
 
         briefing.is_pushed = True
-        briefing.pushed_at = datetime.utcnow()
+        briefing.pushed_at = datetime.now(timezone.utc)
         db.commit()
         db.refresh(briefing)
         return briefing

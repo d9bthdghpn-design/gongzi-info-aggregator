@@ -50,15 +50,19 @@ services:
     container_name: gongzi-backend
     restart: unless-stopped
     environment:
-      - APP_ENV=production
-      - DATABASE_URL=postgresql://${POSTGRES_USER:-gongzi}:${POSTGRES_PASSWORD:-gongzi123}@postgres:5432/${POSTGRES_DB:-gongzi_info}
+      - ENVIRONMENT=production
+      - DATABASE_URL=postgresql+psycopg2://${POSTGRES_USER:-gongzi}:${POSTGRES_PASSWORD:-gongzi123}@postgres:5432/${POSTGRES_DB:-gongzi_info}
       - REDIS_URL=redis://:${REDIS_PASSWORD:-redis123}@redis:6379/0
       - CELERY_BROKER_URL=redis://:${REDIS_PASSWORD:-redis123}@redis:6379/1
       - CELERY_RESULT_BACKEND=redis://:${REDIS_PASSWORD:-redis123}@redis:6379/2
-      - JWT_SECRET_KEY=${JWT_SECRET_KEY:-your-secret-key-change-in-production}
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY:-please-change-this-secret-key}
+      - CORS_ORIGINS=${CORS_ORIGINS:-http://localhost:8080}
       - AI_API_KEY=${AI_API_KEY:-}
       - AI_BASE_URL=${AI_BASE_URL:-}
       - AI_MODEL=${AI_MODEL:-gpt-3.5-turbo}
+      - FEISHU_WEBHOOK_URL=${FEISHU_WEBHOOK_URL:-}
+      - FEISHU_WEBHOOK_SECRET=${FEISHU_WEBHOOK_SECRET:-}
+      - WECOM_WEBHOOK_URL=${WECOM_WEBHOOK_URL:-}
       - TZ=Asia/Shanghai
     depends_on:
       postgres:
@@ -70,23 +74,31 @@ services:
     networks:
       - gongzi-network
 
-  # Celery Worker
+  # Celery Worker（含采集任务，通过 CrawlerRunner 运行 Scrapy）
   celery-worker:
     build:
       context: ./backend
       dockerfile: Dockerfile
     container_name: gongzi-celery-worker
     restart: unless-stopped
-    command: celery -A app.tasks.celery_app worker --loglevel=info --concurrency=4
+    command: celery -A app.tasks.celery_app worker --loglevel=info --concurrency=2
+    volumes:
+      # 挂载爬虫代码，使 Celery worker 可访问 crawler 模块
+      - ./crawler:/app/crawler
     environment:
-      - APP_ENV=production
-      - DATABASE_URL=postgresql://${POSTGRES_USER:-gongzi}:${POSTGRES_PASSWORD:-gongzi123}@postgres:5432/${POSTGRES_DB:-gongzi_info}
+      - ENVIRONMENT=production
+      - DATABASE_URL=postgresql+psycopg2://${POSTGRES_USER:-gongzi}:${POSTGRES_PASSWORD:-gongzi123}@postgres:5432/${POSTGRES_DB:-gongzi_info}
       - REDIS_URL=redis://:${REDIS_PASSWORD:-redis123}@redis:6379/0
       - CELERY_BROKER_URL=redis://:${REDIS_PASSWORD:-redis123}@redis:6379/1
       - CELERY_RESULT_BACKEND=redis://:${REDIS_PASSWORD:-redis123}@redis:6379/2
+      - SCRAPY_SETTINGS_MODULE=crawler.settings
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY:-please-change-this-secret-key}
       - AI_API_KEY=${AI_API_KEY:-}
       - AI_BASE_URL=${AI_BASE_URL:-}
       - AI_MODEL=${AI_MODEL:-gpt-3.5-turbo}
+      - FEISHU_WEBHOOK_URL=${FEISHU_WEBHOOK_URL:-}
+      - FEISHU_WEBHOOK_SECRET=${FEISHU_WEBHOOK_SECRET:-}
+      - WECOM_WEBHOOK_URL=${WECOM_WEBHOOK_URL:-}
       - TZ=Asia/Shanghai
     depends_on:
       postgres:
@@ -96,7 +108,7 @@ services:
     networks:
       - gongzi-network
 
-  # Celery Beat（定时任务）
+  # Celery Beat（定时任务调度）
   celery-beat:
     build:
       context: ./backend
@@ -105,30 +117,14 @@ services:
     restart: unless-stopped
     command: celery -A app.tasks.celery_app beat --loglevel=info
     environment:
-      - APP_ENV=production
-      - DATABASE_URL=postgresql://${POSTGRES_USER:-gongzi}:${POSTGRES_PASSWORD:-gongzi123}@postgres:5432/${POSTGRES_DB:-gongzi_info}
+      - ENVIRONMENT=production
+      - DATABASE_URL=postgresql+psycopg2://${POSTGRES_USER:-gongzi}:${POSTGRES_PASSWORD:-gongzi123}@postgres:5432/${POSTGRES_DB:-gongzi_info}
       - REDIS_URL=redis://:${REDIS_PASSWORD:-redis123}@redis:6379/0
       - CELERY_BROKER_URL=redis://:${REDIS_PASSWORD:-redis123}@redis:6379/1
       - CELERY_RESULT_BACKEND=redis://:${REDIS_PASSWORD:-redis123}@redis:6379/2
-      - TZ=Asia/Shanghai
-    depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-    networks:
-      - gongzi-network
-
-  # 采集服务
-  crawler:
-    build:
-      context: ./crawler
-      dockerfile: Dockerfile
-    container_name: gongzi-crawler
-    restart: unless-stopped
-    environment:
-      - DATABASE_URL=postgresql://${POSTGRES_USER:-gongzi}:${POSTGRES_PASSWORD:-gongzi123}@postgres:5432/${POSTGRES_DB:-gongzi_info}
-      - REDIS_URL=redis://:${REDIS_PASSWORD:-redis123}@redis:6379/0
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY:-please-change-this-secret-key}
+      - FEISHU_WEBHOOK_URL=${FEISHU_WEBHOOK_URL:-}
+      - WECOM_WEBHOOK_URL=${WECOM_WEBHOOK_URL:-}
       - TZ=Asia/Shanghai
     depends_on:
       postgres:

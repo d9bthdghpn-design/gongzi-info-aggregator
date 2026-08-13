@@ -167,7 +167,7 @@ class AIService:
 
         try:
             result, input_tokens, output_tokens = self._call_ai(system_prompt, user_content)
-            return json.loads(result)
+            return json.loads(result), input_tokens, output_tokens
         except Exception as e:
             logger.error(f"AI分类失败: {e}")
             return {
@@ -175,7 +175,7 @@ class AIService:
                 "info_type": None,
                 "area_tags": [],
                 "industry_tags": [],
-            }
+            }, 0, 0
 
     def generate_summary(self, title: str, content: str) -> str:
         """AI生成摘要"""
@@ -188,11 +188,11 @@ class AIService:
         user_content = f"标题：{title}\n内容：{content[:2000]}"
 
         try:
-            result, _, _ = self._call_ai(system_prompt, user_content)
-            return result.strip()
+            result, in_tok, out_tok = self._call_ai(system_prompt, user_content)
+            return result.strip(), in_tok, out_tok
         except Exception as e:
             logger.error(f"AI摘要生成失败: {e}")
-            return content[:150] + "..."
+            return content[:150] + "...", 0, 0
 
     def generate_business_tip(self, title: str, content: str) -> str:
         """AI生成业务启示"""
@@ -206,11 +206,11 @@ class AIService:
         user_content = f"标题：{title}\n内容：{content[:2000]}"
 
         try:
-            result, _, _ = self._call_ai(system_prompt, user_content)
-            return result.strip()
+            result, in_tok, out_tok = self._call_ai(system_prompt, user_content)
+            return result.strip(), in_tok, out_tok
         except Exception as e:
             logger.error(f"AI业务启示生成失败: {e}")
-            return "💡 持续关注该企业动态，适时跟进营销。"
+            return "💡 持续关注该企业动态，适时跟进营销。", 0, 0
 
     def score_quality(self, title: str, content: str) -> int:
         """AI质量打分（0-100分）"""
@@ -225,12 +225,12 @@ class AIService:
         user_content = f"标题：{title}\n内容：{content[:2000]}"
 
         try:
-            result, _, _ = self._call_ai(system_prompt, user_content)
+            result, in_tok, out_tok = self._call_ai(system_prompt, user_content)
             score = int(result.strip())
-            return max(0, min(100, score))
+            return max(0, min(100, score)), in_tok, out_tok
         except Exception as e:
             logger.error(f"AI质量打分失败: {e}")
-            return 50
+            return 50, 0, 0
 
     def process_news(self, db: Session, news_id: str) -> bool:
         """完整处理一条资讯"""
@@ -244,9 +244,9 @@ class AIService:
 
         try:
             # 1. 分类打标
-            classification = self.classify_news(news.title, news.content_raw or "")
-            input_tokens_total += 100
-            output_tokens_total += 100
+            classification, in_tok, out_tok = self.classify_news(news.title, news.content_raw or "")
+            input_tokens_total += in_tok
+            output_tokens_total += out_tok
 
             news.business_category = classification.get("business_category")
             news.info_type = classification.get("info_type")
@@ -254,19 +254,22 @@ class AIService:
             news.industry_tags = classification.get("industry_tags", [])
 
             # 2. 生成摘要
-            news.content_summary = self.generate_summary(news.title, news.content_raw or "")
-            input_tokens_total += 200
-            output_tokens_total += 150
+            summary, in_tok, out_tok = self.generate_summary(news.title, news.content_raw or "")
+            news.content_summary = summary
+            input_tokens_total += in_tok
+            output_tokens_total += out_tok
 
             # 3. 生成业务启示
-            news.business_tip = self.generate_business_tip(news.title, news.content_raw or "")
-            input_tokens_total += 200
-            output_tokens_total += 100
+            tip, in_tok, out_tok = self.generate_business_tip(news.title, news.content_raw or "")
+            news.business_tip = tip
+            input_tokens_total += in_tok
+            output_tokens_total += out_tok
 
             # 4. 质量打分
-            news.quality_score = self.score_quality(news.title, news.content_raw or "")
-            input_tokens_total += 150
-            output_tokens_total += 10
+            score, in_tok, out_tok = self.score_quality(news.title, news.content_raw or "")
+            news.quality_score = score
+            input_tokens_total += in_tok
+            output_tokens_total += out_tok
 
             # 更新状态
             news.status = "pending_review"

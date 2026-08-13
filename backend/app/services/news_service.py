@@ -1,11 +1,10 @@
 """
 资讯服务 - 核心业务逻辑
 """
-from datetime import datetime, date, timedelta
+from datetime import datetime, date, timedelta, timezone
 from typing import List, Optional, Tuple
-from sqlalchemy import and_, or_, func, desc, asc
+from sqlalchemy import and_, or_, func, desc, asc, cast, String
 from sqlalchemy.orm import Session
-from sqlalchemy.dialects.postgresql import array
 
 from app.models import NewsItem, TagDictionary, Topic
 from app.schemas.news import (
@@ -14,6 +13,24 @@ from app.schemas.news import (
 )
 from app.services.base import CRUDBase
 from app.core.exceptions import BusinessException
+
+
+def _json_array_contains(column, values: List[str]):
+    """跨数据库的 JSON 数组包含查询（兼容 SQLite 和 PostgreSQL）"""
+    if not values:
+        return None
+    # 将 JSON 列转为字符串，检查是否包含每个标签（带引号避免子串误匹配）
+    conditions = [cast(column, String).like(f'%"{v}"%') for v in values]
+    return and_(*conditions)
+
+
+# 允许排序的字段白名单
+_SORT_COLUMNS = {
+    "publish_date": NewsItem.publish_date,
+    "created_at": NewsItem.created_at,
+    "quality_score": NewsItem.quality_score,
+    "view_count": NewsItem.view_count,
+}
 
 
 class NewsService(CRUDBase[NewsItem, NewsItemCreateSchema, NewsItemUpdateSchema]):
@@ -42,13 +59,17 @@ class NewsService(CRUDBase[NewsItem, NewsItemCreateSchema, NewsItemUpdateSchema]
         if query_params.business_category:
             query = query.filter(NewsItem.business_category == query_params.business_category)
 
-        # 区域标签筛选（JSONB数组包含）
+        # 区域标签筛选（跨数据库兼容）
         if query_params.area_tags:
-            query = query.filter(NewsItem.area_tags.contains(query_params.area_tags))
+            cond = _json_array_contains(NewsItem.area_tags, query_params.area_tags)
+            if cond is not None:
+                query = query.filter(cond)
 
         # 行业标签筛选
         if query_params.industry_tags:
-            query = query.filter(NewsItem.industry_tags.contains(query_params.industry_tags))
+            cond = _json_array_contains(NewsItem.industry_tags, query_params.industry_tags)
+            if cond is not None:
+                query = query.filter(cond)
 
         # 资讯类型筛选
         if query_params.info_type:
@@ -68,12 +89,12 @@ class NewsService(CRUDBase[NewsItem, NewsItemCreateSchema, NewsItemUpdateSchema]
         if query_params.min_quality_score:
             query = query.filter(NewsItem.quality_score >= query_params.min_quality_score)
 
-        # 排序
-        sort_column = getattr(NewsItem, query_params.sort_by, NewsItem.publish_date)
-        if query_params.sort_order == "desc":
-            query = query.order_by(desc(sort_column))
-        else:
+        # 排序（白名单防止注入）
+        sort_column = _SORT_COLUMNS.get(query_params.sort_by, NewsItem.publish_date)
+        if query_params.sort_order == "asc":
             query = query.order_by(asc(sort_column))
+        else:
+            query = query.order_by(desc(sort_column))
 
         total = query.count()
         items = query.offset((query_params.page - 1) * query_params.page_size).limit(query_params.page_size).all()
@@ -94,6 +115,7 @@ class NewsService(CRUDBase[NewsItem, NewsItemCreateSchema, NewsItemUpdateSchema]
         if increment_view:
             news.view_count += 1
             db.commit()
+            db.refresh(news)
 
         return news
 
@@ -149,6 +171,13 @@ class NewsService(CRUDBase[NewsItem, NewsItemCreateSchema, NewsItemUpdateSchema]
             NewsItem.is_deleted == False,
         ).scalar() or 0
 
+        # 最后更新时间（最新资讯的创建时间）
+        last_updated_obj = db.query(func.max(NewsItem.created_at)).filter(
+            NewsItem.status == "published",
+            NewsItem.is_deleted == False,
+        ).scalar()
+        last_updated = last_updated_obj.strftime("%Y-%m-%d %H:%M") if last_updated_obj else None
+
         return NewsStatsSchema(
             today_new=today_new,
             bidding_count=bidding_count,
@@ -156,6 +185,7 @@ class NewsService(CRUDBase[NewsItem, NewsItemCreateSchema, NewsItemUpdateSchema]
             enterprise_count=enterprise_count,
             high_value_count=high_value_count,
             today_new_trend=today_new_trend,
+            last_updated=last_updated,
         )
 
     def audit_news(
@@ -171,7 +201,7 @@ class NewsService(CRUDBase[NewsItem, NewsItemCreateSchema, NewsItemUpdateSchema]
 
         news.status = status
         news.reviewer_id = reviewer_id
-        news.reviewed_at = datetime.utcnow()
+        news.reviewed_at = datetime.now(timezone.utc)
         news.review_comment = comment
 
         db.commit()

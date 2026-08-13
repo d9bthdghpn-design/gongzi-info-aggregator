@@ -27,6 +27,7 @@ export interface NewsStats {
   enterprise_count: number
   high_value_count: number
   today_new_trend: number
+  last_updated?: string
 }
 
 export interface TagInfo {

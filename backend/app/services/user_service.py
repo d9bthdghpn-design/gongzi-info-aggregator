@@ -1,7 +1,7 @@
 """
 用户服务 - 用户认证与管理
 """
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Optional
 from sqlalchemy.orm import Session
 
@@ -27,14 +27,11 @@ class UserService(CRUDBase[User, UserCreateSchema, UserUpdateSchema]):
         return db.query(User).filter(User.username == username).first()
 
     def authenticate(self, db: Session, username: str, password: str) -> Optional[User]:
-        """用户认证"""
+        """用户认证：校验数据库中的密码哈希"""
         user = self.get_by_username(db, username)
-        if not user:
+        if not user or not user.is_active:
             return None
-        # 开发模式：admin用户密码为admin123（生产环境应使用密码哈希）
-        if username == "admin" and password == "admin123":
-            return user
-        if not verify_password(password, ""):  # 简化处理，实际应从数据库取哈希
+        if not verify_password(password, user.password_hash):
             return None
         return user
 
@@ -48,7 +45,7 @@ class UserService(CRUDBase[User, UserCreateSchema, UserUpdateSchema]):
             raise BusinessException(code=403, message="用户已被禁用")
 
         # 更新最后登录时间
-        user.last_login_at = datetime.utcnow()
+        user.last_login_at = datetime.now(timezone.utc)
         db.commit()
 
         # 生成Token
@@ -124,7 +121,7 @@ class UserService(CRUDBase[User, UserCreateSchema, UserUpdateSchema]):
             db.refresh(user)
 
         # 更新最后登录时间
-        user.last_login_at = datetime.utcnow()
+        user.last_login_at = datetime.now(timezone.utc)
         db.commit()
 
         # 生成Token

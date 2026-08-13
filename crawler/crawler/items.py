@@ -12,7 +12,9 @@ class NewsItem(scrapy.Item):
     source_channel = scrapy.Field()  # 来源渠道名称
     source_url = scrapy.Field()      # 原始URL
     publish_date = scrapy.Field()    # 发布日期
-    area_scope = scrapy.Field()      # 区域范围
-    industry_scope = scrapy.Field()  # 行业范围
-    source_id = scrapy.Field()       # 采集渠道ID
+    area_tags = scrapy.Field()       # 区域标签
+    industry_tags = scrapy.Field()   # 行业标签
+    info_type = scrapy.Field()       # 资讯类型
+    source_id = scrapy.Field()       # 采集源ID
+    dedup_hash = scrapy.Field()      # 去重哈希
     crawl_time = scrapy.Field()      # 采集时间

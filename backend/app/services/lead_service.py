@@ -1,7 +1,7 @@
 """
 线索服务 - 线索全生命周期管理
 """
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import List, Optional, Tuple
 from sqlalchemy import and_, or_, func, desc, asc
 from sqlalchemy.orm import Session
@@ -14,6 +14,16 @@ from app.schemas.lead import (
 from app.services.base import CRUDBase
 from app.core.exceptions import BusinessException
 from app.services.news_service import news_service
+
+# 允许排序的字段白名单
+_LEAD_SORT_COLUMNS = {
+    "created_at": Lead.created_at,
+    "updated_at": Lead.updated_at,
+    "priority": Lead.priority,
+    "status": Lead.status,
+    "protect_expire_at": Lead.protect_expire_at,
+    "next_followup_time": Lead.next_followup_time,
+}
 
 
 class LeadService(CRUDBase[Lead, LeadCreateSchema, LeadUpdateSchema]):
@@ -64,7 +74,7 @@ class LeadService(CRUDBase[Lead, LeadCreateSchema, LeadUpdateSchema]):
             query = query.filter(Lead.assignee_id == query_params.assignee_id)
 
         # 排序
-        sort_column = getattr(Lead, query_params.sort_by, Lead.created_at)
+        sort_column = _LEAD_SORT_COLUMNS.get(query_params.sort_by, Lead.created_at)
         if query_params.sort_order == "desc":
             query = query.order_by(desc(sort_column))
         else:
@@ -134,7 +144,7 @@ class LeadService(CRUDBase[Lead, LeadCreateSchema, LeadUpdateSchema]):
         lead.public_pool = False
         lead.assignee_id = user_id
         lead.status = "active"
-        lead.protect_expire_at = datetime.utcnow() + timedelta(days=protect_days)
+        lead.protect_expire_at = datetime.now(timezone.utc) + timedelta(days=protect_days)
 
         db.commit()
         db.refresh(lead)
@@ -166,7 +176,7 @@ class LeadService(CRUDBase[Lead, LeadCreateSchema, LeadUpdateSchema]):
         lead.assignee_id = assign_data.assignee_id
         lead.public_pool = False
         lead.status = "active"
-        lead.protect_expire_at = datetime.utcnow() + timedelta(days=assign_data.protect_days)
+        lead.protect_expire_at = datetime.now(timezone.utc) + timedelta(days=assign_data.protect_days)
 
         db.commit()
         db.refresh(lead)
@@ -202,7 +212,7 @@ class LeadFollowupService:
         db.add(followup)
 
         # 更新线索的最后跟进时间和下次跟进时间
-        lead.last_followup_time = datetime.utcnow()
+        lead.last_followup_time = datetime.now(timezone.utc)
         if obj_in.next_time:
             lead.next_followup_time = obj_in.next_time
 
