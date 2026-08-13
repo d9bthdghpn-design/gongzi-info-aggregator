@@ -16,10 +16,18 @@ from app.models import CrawlSource, CrawlLog, NewsItem
 logger = logging.getLogger(__name__)
 
 # 将爬虫项目加入 Python 路径
-_PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent.parent  # 项目根目录
-_CRAWLER_DIR = _PROJECT_ROOT / "crawler"
-if str(_CRAWLER_DIR) not in sys.path:
-    sys.path.insert(0, str(_CRAWLER_DIR))
+# 兼容多种部署结构：本地开发(backend与crawler同级)、Docker(backend在/app，crawler在/app/crawler或/crawler)
+_PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent.parent  # 项目根目录（本地开发）
+_CRAWLER_CANDIDATES = [
+    _PROJECT_ROOT / "crawler",           # 本地开发：项目根/crawler
+    Path(__file__).resolve().parent.parent.parent / "crawler",  # Docker: /app/crawler
+    Path("/app/crawler"),                 # Docker 显式路径
+    Path("/crawler"),                     # 备选根路径
+]
+for _candidate in _CRAWLER_CANDIDATES:
+    if _candidate.is_dir() and str(_candidate) not in sys.path:
+        sys.path.insert(0, str(_candidate))
+        break
 
 os.environ.setdefault("SCRAPY_SETTINGS_MODULE", "crawler.settings")
 

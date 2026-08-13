@@ -22,6 +22,9 @@ RUN pip install --no-cache-dir -r requirements.txt
 # 复制后端代码
 COPY backend/ .
 
+# 复制爬虫代码（Celery 运行爬虫需要）
+COPY crawler/ ./crawler/
+
 # 从前置构建阶段复制前端静态文件
 COPY --from=frontend-builder /frontend/dist ./static
 
