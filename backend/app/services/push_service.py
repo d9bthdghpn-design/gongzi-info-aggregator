@@ -107,10 +107,16 @@ def format_briefing_message(briefing) -> str:
             score = item.get("quality_score", 0)
             source = item.get("source_channel", "")
             pub_date = item.get("publish_date", "")
+            source_url = item.get("source_url", "")
+            # 标题加原文超链接（Markdown格式）
+            if source_url:
+                title_display = f"[{title[:50]}]({source_url})"
+            else:
+                title_display = title[:50]
             # 格式: [评分] [来源] 标题（发布日期）
             source_part = f"[{source}] " if source else ""
             date_part = f"（{pub_date}）" if pub_date else ""
-            lines.append(f"  [{score}分] {source_part}{title[:50]}{date_part}")
+            lines.append(f"  [{score}分] {source_part}{title_display}{date_part}")
         lines.append("")
 
     lines.append("详情请登录系统查看")
@@ -118,11 +124,14 @@ def format_briefing_message(briefing) -> str:
 
 
 def format_high_value_message(news) -> str:
-    """格式化高价值商机即时推送（标注来源和发布日期）"""
+    """格式化高价值商机即时推送（标注来源和发布日期，标题加原文链接）"""
     lines = []
     lines.append("🔥 高价值商机提醒")
     lines.append("")
-    lines.append(f"标题：{news.title}")
+    if news.source_url:
+        lines.append(f"标题：[{news.title}]({news.source_url})")
+    else:
+        lines.append(f"标题：{news.title}")
     if news.business_category:
         lines.append(f"分类：{news.business_category}")
     if news.source_channel:

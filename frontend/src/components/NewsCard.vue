@@ -44,6 +44,16 @@
       <div class="footer-left">
         <span class="source">{{ news.source_channel }}</span>
         <span class="date">{{ formatRelativeTime(news.publish_date) }}</span>
+        <a
+          v-if="news.source_url"
+          class="source-link"
+          :href="news.source_url"
+          target="_blank"
+          rel="noopener noreferrer"
+          @click.stop
+        >
+          🔗 原文
+        </a>
       </div>
       <div class="footer-right">
         <span class="quality-score" :style="{ color: qualityColor }">
@@ -203,6 +213,13 @@ function handleClick() {
     .date {
       font-size: 12px;
       color: #bfbfbf;
+    }
+
+    .source-link {
+      font-size: 12px;
+      color: #1890ff;
+      text-decoration: none;
+      margin-left: 4px;
     }
   }
 

@@ -30,12 +30,12 @@ class BriefingService:
         if existing:
             return existing
 
-        # 获取当天的已发布资讯
+        # 获取当天的已发布资讯（按发布日期降序，最新在前）
         news_list = db.query(NewsItem).filter(
             NewsItem.publish_date == brief_date,
             NewsItem.status == "published",
             NewsItem.is_deleted == False,
-        ).order_by(desc(NewsItem.quality_score)).all()
+        ).order_by(desc(NewsItem.publish_date), desc(NewsItem.quality_score)).all()
 
         # 获取业务分类标签
         business_tags = db.query(TagDictionary).filter(
@@ -91,6 +91,7 @@ class BriefingService:
                 "area_tags": news.area_tags,
                 "industry_tags": news.industry_tags,
                 "source_channel": news.source_channel or "",
+                "source_url": news.source_url or "",
                 "publish_date": news.publish_date.isoformat() if news.publish_date else "",
             })
 

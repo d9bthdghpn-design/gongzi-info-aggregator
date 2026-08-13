@@ -58,25 +58,6 @@
         <span class="quality-unit">分</span>
       </div>
 
-      <!-- 7维评分明细 -->
-      <div class="score-dimensions" v-if="hasScoreDimensions">
-        <div class="section-title-sm">📊 七维评分明细</div>
-        <div class="dimension-list">
-          <div class="dimension-item" v-for="dim in dimensionList" :key="dim.key">
-            <div class="dimension-header">
-              <span class="dimension-name">{{ dim.name }}</span>
-              <span class="dimension-value" :style="{ color: getDimColor(dim.value) }">{{ dim.value }}</span>
-            </div>
-            <div class="dimension-bar">
-              <div
-                class="dimension-fill"
-                :style="{ width: dim.value + '%', backgroundColor: getDimColor(dim.value) }"
-              ></div>
-            </div>
-          </div>
-        </div>
-      </div>
-
       <!-- 摘要 -->
       <div class="summary-section" v-if="news.content_summary">
         <div class="section-title">📝 核心摘要</div>
@@ -97,6 +78,15 @@
 
       <!-- 操作按钮 -->
       <div class="action-bar">
+        <a
+          v-if="news.source_url"
+          class="action-btn source-link"
+          :href="news.source_url"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          🔗 查看原文
+        </a>
         <button class="action-btn primary" @click="reportLead">
           🎯 上报线索
         </button>
@@ -157,37 +147,6 @@ const businessColor = computed(() => {
 const qualityColor = computed(() => {
   return getQualityScoreColor(news.value?.quality_score || 0)
 })
-
-// 7维评分配置
-const DIMENSION_CONFIG = [
-  { key: 'event_severity', name: '事件严重性' },
-  { key: 'impact_scope', name: '影响范围' },
-  { key: 'asset_sensitivity', name: '资产敏感度' },
-  { key: 'credibility', name: '可信度' },
-  { key: 'novelty', name: '新颖度' },
-  { key: 'timeliness', name: '时效性' },
-  { key: 'confidence', name: '置信度' },
-]
-
-const hasScoreDimensions = computed(() => {
-  if (!news.value?.score_dimensions) return false
-  return Object.keys(news.value.score_dimensions).length > 0
-})
-
-const dimensionList = computed(() => {
-  if (!news.value?.score_dimensions) return []
-  return DIMENSION_CONFIG.map(dim => ({
-    ...dim,
-    value: news.value!.score_dimensions[dim.key] || 0,
-  }))
-})
-
-function getDimColor(value: number): string {
-  if (value >= 80) return '#52c41a'
-  if (value >= 60) return '#faad14'
-  if (value >= 40) return '#fa8c16'
-  return '#ff4d4f'
-}
 
 function areaName(code: string): string {
   return areaTagMap[code] || code
@@ -367,58 +326,6 @@ function collectNews() {
   }
 }
 
-.score-dimensions {
-  background-color: #fff;
-  border-radius: 12px;
-  padding: 16px;
-  margin-bottom: 12px;
-
-  .section-title-sm {
-    font-size: 14px;
-    font-weight: 600;
-    color: #262626;
-    margin-bottom: 14px;
-  }
-
-  .dimension-list {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-  }
-
-  .dimension-item {
-    .dimension-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 4px;
-    }
-
-    .dimension-name {
-      font-size: 12px;
-      color: #595959;
-    }
-
-    .dimension-value {
-      font-size: 13px;
-      font-weight: 600;
-    }
-
-    .dimension-bar {
-      height: 6px;
-      background-color: #f0f0f0;
-      border-radius: 3px;
-      overflow: hidden;
-    }
-
-    .dimension-fill {
-      height: 100%;
-      border-radius: 3px;
-      transition: width 0.3s ease;
-    }
-  }
-}
-
 .summary-section,
 .tip-section,
 .content-section {
@@ -494,6 +401,15 @@ function collectNews() {
   &.secondary {
     background-color: #f5f5f5;
     color: #595959;
+  }
+
+  &.source-link {
+    background-color: #e6f7ff;
+    color: #1890ff;
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
 
   &:active {

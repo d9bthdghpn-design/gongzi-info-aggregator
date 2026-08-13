@@ -28,6 +28,7 @@ class NewsItemSchema(BaseSchema):
     info_type: Optional[str] = None
     source_type: Optional[str] = None
     source_channel: Optional[str] = None
+    source_url: Optional[str] = None  # 原文链接（前端跳转用）
     publish_date: Optional[date] = None
     business_tip: Optional[str] = None
     quality_score: int = 0

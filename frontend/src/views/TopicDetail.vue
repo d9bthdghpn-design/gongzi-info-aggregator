@@ -117,7 +117,10 @@ async function loadMore() {
     const topicId = route.params.id as string
     const res = await getTopicNews(topicId, page.value, pageSize)
     if (res.code === 0) {
-      newsList.value = [...newsList.value, ...(res.data || [])]
+      // 按id去重，防止offset分页在数据插入时产生重复资讯
+      const existingIds = new Set(newsList.value.map(n => n.id))
+      const newItems = (res.data || []).filter(n => !existingIds.has(n.id))
+      newsList.value = [...newsList.value, ...newItems]
       hasMore.value = newsList.value.length < (res.total || 0)
     }
   } catch (error) {

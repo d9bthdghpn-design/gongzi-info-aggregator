@@ -11,6 +11,7 @@ export interface NewsItem {
   info_type?: string
   source_type?: string
   source_channel?: string
+  source_url?: string
   publish_date?: string
   business_tip?: string
   quality_score: number
