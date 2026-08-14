@@ -111,49 +111,60 @@ def get_public_pool_leads(
     )
 
 
-@router.get("/dashboard")
+@router.get("/dashboard", response_model=DataResponse[LeadDashboardSchema])
 def get_lead_dashboard(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
     """转化看板：漏斗+分类统计+经理排行"""
-    import traceback
-    try:
-        from sqlalchemy import func, case
-        from app.models import Lead, NewsItem
+    from sqlalchemy import func, case
+    from app.models import Lead, NewsItem
 
-        total_opportunities = db.query(func.count(NewsItem.id)).filter(
-            NewsItem.status == "published", NewsItem.is_deleted == False,
-        ).scalar() or 0
+    # 系统商机数（已发布资讯）
+    total_opportunities = db.query(func.count(NewsItem.id)).filter(
+        NewsItem.status == "published", NewsItem.is_deleted == False,
+    ).scalar() or 0
 
-        base_query = db.query(Lead).filter(Lead.is_deleted == False)
-        total_leads = base_query.count()
-        active_leads = base_query.filter(Lead.status == "active").count()
-        converted_leads = base_query.filter(Lead.status == "converted").count()
-        lost_leads = base_query.filter(Lead.status == "lost").count()
-        conversion_rate = round(converted_leads / total_leads * 100, 1) if total_leads > 0 else 0.0
+    # 线索统计
+    base_query = db.query(Lead).filter(Lead.is_deleted == False)
+    total_leads = base_query.count()
+    active_leads = base_query.filter(Lead.status == "active").count()
+    converted_leads = base_query.filter(Lead.status == "converted").count()
+    lost_leads = base_query.filter(Lead.status == "lost").count()
+    conversion_rate = round(converted_leads / total_leads * 100, 1) if total_leads > 0 else 0.0
 
-        total_estimated = db.query(func.coalesce(func.sum(Lead.estimated_amount), 0)).filter(Lead.is_deleted == False).scalar() or 0
-        total_converted = db.query(func.coalesce(func.sum(Lead.converted_amount), 0)).filter(Lead.is_deleted == False).scalar() or 0
+    # 金额统计
+    total_estimated = db.query(func.coalesce(func.sum(Lead.estimated_amount), 0)).filter(Lead.is_deleted == False).scalar() or 0
+    total_converted = db.query(func.coalesce(func.sum(Lead.converted_amount), 0)).filter(Lead.is_deleted == False).scalar() or 0
 
-        category_rows = db.query(Lead.source_category, func.count(Lead.id), func.coalesce(func.sum(Lead.estimated_amount), 0)).filter(Lead.is_deleted == False, Lead.source_category.isnot(None)).group_by(Lead.source_category).all()
-        category_breakdown = [{"category": str(r[0]), "count": int(r[1]), "estimated_amount": float(r[2] or 0)} for r in category_rows]
+    # 按行动分类统计
+    category_rows = db.query(
+        Lead.source_category, func.count(Lead.id), func.coalesce(func.sum(Lead.estimated_amount), 0),
+    ).filter(Lead.is_deleted == False, Lead.source_category.isnot(None)).group_by(Lead.source_category).all()
+    category_breakdown = [{"category": str(r[0]), "count": int(r[1]), "estimated_amount": float(r[2] or 0)} for r in category_rows]
 
-        manager_rows = db.query(Lead.assignee_id, func.count(Lead.id), func.sum(case((Lead.status == "converted", 1), else_=0)), func.coalesce(func.sum(Lead.converted_amount), 0)).filter(Lead.is_deleted == False, Lead.assignee_id.isnot(None)).group_by(Lead.assignee_id).order_by(func.count(Lead.id).desc()).limit(10).all()
-        manager_ranking = []
-        for r in manager_rows:
-            user = db.query(User).filter(User.id == r[0]).first()
-            manager_ranking.append({"manager_name": user.username if user else "未知", "total_leads": int(r[1]), "converted_leads": int(r[2] or 0), "converted_amount": float(r[3] or 0)})
+    # 经理排行
+    manager_rows = db.query(
+        Lead.assignee_id, func.count(Lead.id),
+        func.sum(case((Lead.status == "converted", 1), else_=0)),
+        func.coalesce(func.sum(Lead.converted_amount), 0),
+    ).filter(Lead.is_deleted == False, Lead.assignee_id.isnot(None)).group_by(Lead.assignee_id).order_by(func.count(Lead.id).desc()).limit(10).all()
+    manager_ranking = []
+    for r in manager_rows:
+        user = db.query(User).filter(User.id == r[0]).first()
+        manager_ranking.append({
+            "manager_name": user.username if user else "未知",
+            "total_leads": int(r[1]), "converted_leads": int(r[2] or 0),
+            "converted_amount": float(r[3] or 0),
+        })
 
-        return {"code": 0, "message": "success", "data": {
-            "total_opportunities": int(total_opportunities), "total_leads": int(total_leads),
-            "active_leads": int(active_leads), "converted_leads": int(converted_leads),
-            "lost_leads": int(lost_leads), "conversion_rate": float(conversion_rate),
-            "total_estimated_amount": float(total_estimated or 0), "total_converted_amount": float(total_converted or 0),
-            "category_breakdown": category_breakdown, "manager_ranking": manager_ranking,
-        }}
-    except Exception as e:
-        return {"code": 500, "message": f"看板错误: {str(e)[:300]}", "data": {"traceback": traceback.format_exc()[:1000]}}
+    return DataResponse(data=LeadDashboardSchema(
+        total_opportunities=int(total_opportunities), total_leads=int(total_leads),
+        active_leads=int(active_leads), converted_leads=int(converted_leads),
+        lost_leads=int(lost_leads), conversion_rate=float(conversion_rate),
+        total_estimated_amount=float(total_estimated or 0), total_converted_amount=float(total_converted or 0),
+        category_breakdown=category_breakdown, manager_ranking=manager_ranking,
+    ))
 
 
 @router.get("/{lead_id}", response_model=DataResponse[LeadSchema])
@@ -182,40 +193,40 @@ def create_lead(
     return DataResponse(data=LeadSchema.model_validate(lead))
 
 
-@router.post("/from-news", response_model=DataResponse[LeadSchema])
+@router.post("/from-news")
 def create_lead_from_news(
     obj_in: LeadFromNewsSchema,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
     """从资讯转线索"""
-    news = db.query(NewsItem).filter(NewsItem.id == obj_in.news_id).first()
-    if not news:
-        raise BusinessException(code=404, message="资讯不存在")
+    import traceback
+    try:
+        news = db.query(NewsItem).filter(NewsItem.id == obj_in.news_id).first()
+        if not news:
+            raise BusinessException(code=404, message="资讯不存在")
 
-    # 从资讯提取线索信息
-    company_name = obj_in.company_name or news.title[:80]
-    industry = (news.industry_tags or [None])[0] if news.industry_tags else None
-    area = (news.area_tags or [None])[0] if news.area_tags else None
+        company_name = obj_in.company_name or news.title[:80]
+        industry = (news.industry_tags or [None])[0] if news.industry_tags else None
+        area = (news.area_tags or [None])[0] if news.area_tags else None
 
-    lead_data = LeadCreateSchema(
-        company_name=company_name,
-        industry=industry,
-        area=area,
-        project_desc=f"来源资讯：{news.title}\n{news.content_summary or ''}",
-        source_news_id=news.id,
-        priority=obj_in.priority,
-    )
-    lead = lead_service.create_lead(db, lead_data, str(current_user.id))
-    lead.lead_source = "news"
-    lead.source_category = news.business_category
+        lead_data = LeadCreateSchema(
+            company_name=company_name,
+            industry=industry,
+            area=area,
+            project_desc=f"来源资讯：{news.title}\n{news.content_summary or ''}",
+            source_news_id=news.id,
+            priority=obj_in.priority,
+        )
+        lead = lead_service.create_lead(db, lead_data, str(current_user.id))
+        lead.lead_source = "news"
+        lead.source_category = news.business_category
+        db.commit()
+        db.refresh(lead)
 
-    # 增加资讯的线索计数
-    news.lead_count = (news.lead_count or 0) + 1
-    db.commit()
-    db.refresh(lead)
-
-    return DataResponse(data=LeadSchema.model_validate(lead))
+        return {"code": 0, "message": "success", "data": LeadSchema.model_validate(lead).model_dump()}
+    except Exception as e:
+        return {"code": 500, "message": f"转线索错误: {str(e)[:300]}", "data": {"traceback": traceback.format_exc()[:1500]}}
 
 
 @router.put("/{lead_id}", response_model=DataResponse[LeadSchema])
