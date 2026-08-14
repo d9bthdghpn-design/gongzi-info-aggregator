@@ -234,7 +234,7 @@ def get_lead_dashboard(
     current_user: User = Depends(get_current_user),
 ):
     """转化看板：漏斗+分类统计+经理排行"""
-    from sqlalchemy import func
+    from sqlalchemy import func, case
     from app.models import Lead, NewsItem
 
     # 系统商机数（已发布资讯）
@@ -280,7 +280,7 @@ def get_lead_dashboard(
     manager_rows = db.query(
         Lead.assignee_id,
         func.count(Lead.id).label("total"),
-        func.count(Lead.id).filter(Lead.status == "converted").label("converted"),
+        func.sum(case([(Lead.status == "converted", 1)], else_=0)).label("converted"),
         func.coalesce(func.sum(Lead.converted_amount), 0).label("amount"),
     ).filter(
         Lead.is_deleted == False,
