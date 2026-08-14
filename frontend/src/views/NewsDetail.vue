@@ -87,9 +87,6 @@
         >
           🔗 查看原文
         </a>
-        <button class="action-btn primary" @click="reportLead">
-          🎯 上报线索
-        </button>
         <button class="action-btn secondary" @click="collectNews">
           ⭐ 收藏
         </button>
@@ -184,13 +181,6 @@ function goBack() {
 
 function shareNews() {
   showToast('分享功能开发中')
-}
-
-function reportLead() {
-  router.push({
-    path: '/leads/create',
-    query: { news_id: news.value?.id },
-  })
 }
 
 function collectNews() {

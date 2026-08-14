@@ -193,40 +193,36 @@ def create_lead(
     return DataResponse(data=LeadSchema.model_validate(lead))
 
 
-@router.post("/from-news")
+@router.post("/from-news", response_model=DataResponse[LeadSchema])
 def create_lead_from_news(
     obj_in: LeadFromNewsSchema,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
     """从资讯转线索"""
-    import traceback
-    try:
-        news = db.query(NewsItem).filter(NewsItem.id == obj_in.news_id).first()
-        if not news:
-            raise BusinessException(code=404, message="资讯不存在")
+    news = db.query(NewsItem).filter(NewsItem.id == obj_in.news_id).first()
+    if not news:
+        raise BusinessException(code=404, message="资讯不存在")
 
-        company_name = obj_in.company_name or news.title[:80]
-        industry = (news.industry_tags or [None])[0] if news.industry_tags else None
-        area = (news.area_tags or [None])[0] if news.area_tags else None
+    company_name = obj_in.company_name or news.title[:80]
+    industry = (news.industry_tags or [None])[0] if news.industry_tags else None
+    area = (news.area_tags or [None])[0] if news.area_tags else None
 
-        lead_data = LeadCreateSchema(
-            company_name=company_name,
-            industry=industry,
-            area=area,
-            project_desc=f"来源资讯：{news.title}\n{news.content_summary or ''}",
-            source_news_id=news.id,
-            priority=obj_in.priority,
-        )
-        lead = lead_service.create_lead(db, lead_data, str(current_user.id))
-        lead.lead_source = "news"
-        lead.source_category = news.business_category
-        db.commit()
-        db.refresh(lead)
+    lead_data = LeadCreateSchema(
+        company_name=company_name,
+        industry=industry,
+        area=area,
+        project_desc=f"来源资讯：{news.title}\n{news.content_summary or ''}",
+        source_news_id=str(news.id),
+        priority=obj_in.priority,
+    )
+    lead = lead_service.create_lead(db, lead_data, str(current_user.id))
+    lead.lead_source = "news"
+    lead.source_category = news.business_category
+    db.commit()
+    db.refresh(lead)
 
-        return {"code": 0, "message": "success", "data": LeadSchema.model_validate(lead).model_dump()}
-    except Exception as e:
-        return {"code": 500, "message": f"转线索错误: {str(e)[:300]}", "data": {"traceback": traceback.format_exc()[:1500]}}
+    return DataResponse(data=LeadSchema.model_validate(lead))
 
 
 @router.put("/{lead_id}", response_model=DataResponse[LeadSchema])

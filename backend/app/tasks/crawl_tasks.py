@@ -215,3 +215,34 @@ def crawl_high_priority():
         return {"total": len(sources), "submitted": len(results), "results": results}
     finally:
         db.close()
+
+
+@celery_app.task(name="app.tasks.crawl_tasks.crawl_daily_full")
+def crawl_daily_full():
+    """每日全量深度采集：采集所有活跃源，完成后自动触发AI处理"""
+    logger.info("开始每日全量深度采集")
+
+    db = SessionLocal()
+    try:
+        sources = db.query(CrawlSource).filter(
+            CrawlSource.is_active == True
+        ).order_by(CrawlSource.priority.desc()).all()
+
+        logger.info(f"待采集数据源数: {len(sources)}")
+
+        submitted = 0
+        for source in sources:
+            try:
+                crawl_source_task.apply_async(args=[str(source.id)])
+                submitted += 1
+            except Exception as e:
+                logger.error(f"提交采集任务失败: {source.name}, {e}")
+
+        # 延迟15分钟后触发AI处理（等待采集任务完成）
+        from app.tasks.ai_tasks import process_pending_news
+        process_pending_news.apply_async(countdown=900)
+
+        logger.info(f"每日全量采集提交完成: 共{len(sources)}个源, 成功提交{submitted}个, 15分钟后触发AI处理")
+        return {"total_sources": len(sources), "submitted": submitted, "ai_processing_scheduled": True}
+    finally:
+        db.close()

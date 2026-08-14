@@ -18,35 +18,9 @@
       </div>
     </div>
 
-    <!-- 数据统计 -->
-    <div class="stats-card">
-      <div class="stat-item">
-        <div class="stat-num">{{ myStats.totalLeads }}</div>
-        <div class="stat-label">我的线索</div>
-      </div>
-      <div class="stat-item">
-        <div class="stat-num">{{ myStats.following }}</div>
-        <div class="stat-label">跟进中</div>
-      </div>
-      <div class="stat-item">
-        <div class="stat-num converted">{{ myStats.converted }}</div>
-        <div class="stat-label">已转化</div>
-      </div>
-    </div>
-
     <!-- 功能菜单 -->
     <div class="menu-list">
       <div class="menu-group">
-        <div class="menu-item" @click="goTo('/leads')">
-          <span class="menu-icon">🎯</span>
-          <span class="menu-text">我的线索</span>
-          <span class="menu-arrow">›</span>
-        </div>
-        <div class="menu-item" @click="goTo('/dashboard')">
-          <span class="menu-icon">📊</span>
-          <span class="menu-text">转化看板</span>
-          <span class="menu-arrow">›</span>
-        </div>
         <div class="menu-item" @click="goTo('/briefing')">
           <span class="menu-icon">📰</span>
           <span class="menu-text">每日简报</span>
@@ -104,7 +78,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive } from 'vue'
+import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { showConfirmDialog, showToast } from 'vant'
 import { useUserStore } from '@/store/user'
@@ -112,12 +86,6 @@ import TabBar from '@/components/TabBar.vue'
 
 const router = useRouter()
 const userStore = useUserStore()
-
-const myStats = reactive({
-  totalLeads: 0,
-  following: 0,
-  converted: 0,
-})
 
 function goTo(path: string) {
   router.push(path)

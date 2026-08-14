@@ -32,10 +32,10 @@ celery_app.conf.update(
 
 # 定时任务（北京时间）
 celery_app.conf.beat_schedule = {
-    # 每天 06:00 全量采集
+    # 每天 00:00 全量深度采集（采集所有源+自动触发AI处理）
     "daily-full-crawl": {
-        "task": "app.tasks.crawl_tasks.crawl_all",
-        "schedule": crontab(hour=6, minute=0),
+        "task": "app.tasks.crawl_tasks.crawl_daily_full",
+        "schedule": crontab(hour=0, minute=0),
     },
     # 每小时采集高优先级源（招投标等时效性强的）
     "hourly-high-priority-crawl": {

@@ -24,7 +24,6 @@ const tabs = [
   { path: '/home', name: '首页', icon: '🏠' },
   { path: '/topics', name: '专题', icon: '📋' },
   { path: '/briefing', name: '简报', icon: '📰' },
-  { path: '/leads', name: '线索', icon: '🎯' },
   { path: '/profile', name: '我的', icon: '👤' },
 ]
 

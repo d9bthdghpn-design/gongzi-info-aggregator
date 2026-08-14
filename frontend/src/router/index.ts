@@ -23,12 +23,13 @@ const routes: RouteRecordRaw[] = [
     component: () => import('@/views/Briefing.vue'),
     meta: { title: '简报', requiresAuth: true, tabBar: true },
   },
-  {
-    path: '/leads',
-    name: 'Leads',
-    component: () => import('@/views/Leads.vue'),
-    meta: { title: '线索', requiresAuth: true, tabBar: true },
-  },
+  // 线索相关路由已隐藏（后端保留，前端暂不展示）
+  // {
+  //   path: '/leads',
+  //   name: 'Leads',
+  //   component: () => import('@/views/Leads.vue'),
+  //   meta: { title: '线索', requiresAuth: true, tabBar: true },
+  // },
   {
     path: '/profile',
     name: 'Profile',
@@ -41,18 +42,18 @@ const routes: RouteRecordRaw[] = [
     component: () => import('@/views/NewsDetail.vue'),
     meta: { title: '资讯详情', requiresAuth: true },
   },
-  {
-    path: '/leads/create',
-    name: 'LeadCreate',
-    component: () => import('@/views/LeadCreate.vue'),
-    meta: { title: '线索上报', requiresAuth: true },
-  },
-  {
-    path: '/leads/:id',
-    name: 'LeadDetail',
-    component: () => import('@/views/LeadDetail.vue'),
-    meta: { title: '线索详情', requiresAuth: true },
-  },
+  // {
+  //   path: '/leads/create',
+  //   name: 'LeadCreate',
+  //   component: () => import('@/views/LeadCreate.vue'),
+  //   meta: { title: '线索上报', requiresAuth: true },
+  // },
+  // {
+  //   path: '/leads/:id',
+  //   name: 'LeadDetail',
+  //   component: () => import('@/views/LeadDetail.vue'),
+  //   meta: { title: '线索详情', requiresAuth: true },
+  // },
   {
     path: '/topics/:id',
     name: 'TopicDetail',

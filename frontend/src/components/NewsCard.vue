@@ -48,11 +48,8 @@
           {{ news.quality_score }}分
         </span>
       </div>
-      <!-- 三按钮 -->
+      <!-- 两按钮：原文 + 详情 -->
       <div class="action-buttons">
-        <button class="action-btn btn-lead" @click.stop="handleToLead">
-          🎯 转线索
-        </button>
         <a
           v-if="news.source_url"
           class="action-btn btn-source"
@@ -68,19 +65,13 @@
         </button>
       </div>
     </div>
-
-    <!-- 转线索成功提示 -->
-    <div v-if="showLeadSuccess" class="lead-toast">
-      ✅ 已转为线索，可在"线索"中查看
-    </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 import type { NewsItem } from '@/api/news'
-import { createLeadFromNews } from '@/api/leads'
 import {
   formatRelativeTime,
   businessCategoryMap,
@@ -95,12 +86,9 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   (e: 'click', news: NewsItem): void
-  (e: 'to-lead', news: NewsItem): void
 }>()
 
 const router = useRouter()
-const showLeadSuccess = ref(false)
-const converting = ref(false)
 
 const hasTags = computed(() => {
   return (
@@ -133,24 +121,6 @@ function industryName(code: string): string {
 function handleClick() {
   emit('click', props.news)
   router.push(`/news/${props.news.id}`)
-}
-
-async function handleToLead() {
-  if (converting.value) return
-  converting.value = true
-  try {
-    await createLeadFromNews(props.news.id)
-    showLeadSuccess.value = true
-    emit('to-lead', props.news)
-    setTimeout(() => {
-      showLeadSuccess.value = false
-    }, 2500)
-  } catch (e) {
-    console.error('转线索失败', e)
-    alert('转线索失败，请重试')
-  } finally {
-    converting.value = false
-  }
 }
 </script>
 
@@ -291,16 +261,6 @@ async function handleToLead() {
     }
   }
 
-  .btn-lead {
-    background: #1a56db;
-    color: #fff;
-    border-color: #1a56db;
-
-    &:active {
-      background: #1e40af;
-    }
-  }
-
   .btn-source {
     background: #fff;
     color: #1a56db;
@@ -312,25 +272,5 @@ async function handleToLead() {
     color: #4b5563;
     border-color: #e5e7eb;
   }
-}
-
-.lead-toast {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  background: rgba(0, 0, 0, 0.8);
-  color: #fff;
-  padding: 10px 18px;
-  border-radius: 8px;
-  font-size: 13px;
-  z-index: 10;
-  white-space: nowrap;
-  animation: fadeIn 0.2s ease;
-}
-
-@keyframes fadeIn {
-  from { opacity: 0; transform: translate(-50%, -50%) scale(0.9); }
-  to { opacity: 1; transform: translate(-50%, -50%) scale(1); }
 }
 </style>
