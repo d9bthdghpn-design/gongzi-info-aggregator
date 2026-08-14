@@ -139,7 +139,7 @@ def get_lead_dashboard(
         category_rows = db.query(Lead.source_category, func.count(Lead.id), func.coalesce(func.sum(Lead.estimated_amount), 0)).filter(Lead.is_deleted == False, Lead.source_category.isnot(None)).group_by(Lead.source_category).all()
         category_breakdown = [{"category": str(r[0]), "count": int(r[1]), "estimated_amount": float(r[2] or 0)} for r in category_rows]
 
-        manager_rows = db.query(Lead.assignee_id, func.count(Lead.id), func.sum(case([(Lead.status == "converted", 1)], else_=0)), func.coalesce(func.sum(Lead.converted_amount), 0)).filter(Lead.is_deleted == False, Lead.assignee_id.isnot(None)).group_by(Lead.assignee_id).order_by(func.count(Lead.id).desc()).limit(10).all()
+        manager_rows = db.query(Lead.assignee_id, func.count(Lead.id), func.sum(case((Lead.status == "converted", 1), else_=0)), func.coalesce(func.sum(Lead.converted_amount), 0)).filter(Lead.is_deleted == False, Lead.assignee_id.isnot(None)).group_by(Lead.assignee_id).order_by(func.count(Lead.id).desc()).limit(10).all()
         manager_ranking = []
         for r in manager_rows:
             user = db.query(User).filter(User.id == r[0]).first()
