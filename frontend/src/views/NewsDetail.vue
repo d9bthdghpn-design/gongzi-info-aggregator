@@ -12,7 +12,7 @@
     </div>
 
     <div v-if="loading" class="loading-state">
-      <van-loading type="spinner" color="#1a2942" />
+      <van-loading type="spinner" color="#1a56db" />
       <span>加载中...</span>
     </div>
 
@@ -214,8 +214,8 @@ function collectNews() {
   justify-content: space-between;
   padding: 12px 16px;
   padding-top: calc(12px + env(safe-area-inset-top));
-  background-color: #fff;
-  border-bottom: 1px solid #f0f0f0;
+  background: linear-gradient(135deg, #1a56db 0%, #1e40af 100%);
+  border-bottom: none;
 
   .nav-back {
     width: 32px;
@@ -225,17 +225,18 @@ function collectNews() {
     justify-content: center;
     font-size: 20px;
     cursor: pointer;
+    color: #fff;
   }
 
   .nav-title {
     font-size: 16px;
     font-weight: 600;
-    color: #262626;
+    color: #fff;
   }
 
   .nav-actions {
     font-size: 14px;
-    color: #1a2942;
+    color: rgba(255, 255, 255, 0.9);
     cursor: pointer;
   }
 }
@@ -394,7 +395,7 @@ function collectNews() {
   transition: all 0.2s;
 
   &.primary {
-    background: linear-gradient(135deg, #1a2942 0%, #2c3e5a 100%);
+    background: linear-gradient(135deg, #1a56db 0%, #1e40af 100%);
     color: #fff;
   }
 
@@ -404,8 +405,8 @@ function collectNews() {
   }
 
   &.source-link {
-    background-color: #e6f7ff;
-    color: #1890ff;
+    background-color: #eff6ff;
+    color: #1a56db;
     text-decoration: none;
     display: flex;
     align-items: center;

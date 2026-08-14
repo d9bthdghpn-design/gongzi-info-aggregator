@@ -1,539 +1,816 @@
 <template>
-  <div class="home-page page-container">
+  <div class="home-page">
     <!-- 顶部Header -->
-    <div class="page-header">
+    <header class="app-header">
       <div class="header-top">
-        <div>
-          <div class="page-title">对公资讯聚合</div>
-          <div class="page-subtitle">{{ todayStr }} · 最后更新 {{ stats?.last_updated || '—' }}</div>
-        </div>
-        <div class="header-actions">
-          <span class="search-icon" @click="showSearch = true">🔍</span>
-        </div>
-      </div>
-
-      <!-- 统计看板 -->
-      <div class="stat-board" v-if="stats">
-        <div class="stat-item">
-          <div class="stat-number">{{ stats.today_new }}</div>
-          <div class="stat-label">今日新增</div>
-          <div class="stat-trend" :class="stats.today_new_trend >= 0 ? 'up' : 'down'">
-            {{ stats.today_new_trend >= 0 ? '↑' : '↓' }} {{ Math.abs(stats.today_new_trend) }}%
+        <div class="header-title">
+          <span class="logo-icon">🏦</span>
+          <div>
+            <h1>对公资讯聚合</h1>
+            <p class="header-sub">北京东部 · 商机洞察</p>
           </div>
         </div>
-        <div class="stat-item">
-          <div class="stat-number">{{ stats.bidding_count }}</div>
-          <div class="stat-label">招投标</div>
+        <div class="header-stats">
+          <div class="stat-item">
+            <span class="stat-num">{{ stats.total }}</span>
+            <span class="stat-label">资讯</span>
+          </div>
+          <div class="stat-item high-value">
+            <span class="stat-num">{{ stats.highValue }}</span>
+            <span class="stat-label">高价值</span>
+          </div>
         </div>
-        <div class="stat-item">
-          <div class="stat-number">{{ stats.policy_count }}</div>
-          <div class="stat-label">政策动态</div>
+      </div>
+
+      <!-- 5分类导航 -->
+      <nav class="category-nav">
+        <div
+          v-for="cat in categoryTabs"
+          :key="cat.value"
+          class="cat-item"
+          :class="{ active: activeCategory === cat.value }"
+          @click="switchCategory(cat.value)"
+        >
+          <span class="cat-icon">{{ cat.icon }}</span>
+          <span class="cat-label">{{ cat.label }}</span>
         </div>
-        <div class="stat-item">
-          <div class="stat-number high-value">{{ stats.high_value_count }}</div>
-          <div class="stat-label">高价值</div>
+      </nav>
+    </header>
+
+    <!-- 筛选栏 -->
+    <div class="filter-bar">
+      <div class="filter-scroll">
+        <div
+          class="filter-chip"
+          :class="{ active: activeArea === 'all' }"
+          @click="setArea('all')"
+        >全部区域</div>
+        <div
+          v-for="area in areaOptions"
+          :key="area.value"
+          class="filter-chip"
+          :class="{ active: activeArea === area.value }"
+          @click="setArea(area.value)"
+        >{{ area.label }}</div>
+      </div>
+      <div class="filter-actions">
+        <div class="filter-btn" @click="showFilterPanel = !showFilterPanel">
+          <span>⚙️ 筛选</span>
+          <span v-if="hasActiveFilters" class="filter-dot"></span>
+        </div>
+        <div class="sort-btn" @click="toggleSort">
+          {{ sortBy === 'quality_score' ? '🔥 热度' : '🕐 最新' }}
         </div>
       </div>
     </div>
 
-    <!-- 筛选区域 -->
-    <div class="filter-section">
-      <div class="filter-tabs">
-        <div
-          v-for="tab in filterTabs"
-          :key="tab.value"
-          class="filter-tab"
-          :class="{ active: activeFilter === tab.value }"
-          @click="handleFilterChange(tab.value)"
-        >
-          {{ tab.label }}
+    <!-- 展开筛选面板 -->
+    <div v-if="showFilterPanel" class="filter-panel">
+      <div class="panel-section">
+        <label class="panel-label">最低商机分</label>
+        <div class="score-slider">
+          <input type="range" min="0" max="100" step="10" v-model.number="minScore" @input="applyFilters" />
+          <span class="score-value">{{ minScore }}分+</span>
         </div>
       </div>
-
-      <!-- 业务分类筛选 -->
-      <div class="category-filters">
-        <div
-          v-for="cat in businessCategories"
-          :key="cat.code"
-          class="category-chip"
-          :class="{ active: selectedCategory === cat.code }"
-          :style="selectedCategory === cat.code ? { backgroundColor: cat.color + '20', color: cat.color, borderColor: cat.color } : {}"
-          @click="handleCategoryChange(cat.code)"
-        >
-          <span class="chip-icon">{{ cat.icon }}</span>
-          {{ cat.name }}
+      <div class="panel-section">
+        <label class="panel-label">行业</label>
+        <div class="industry-chips">
+          <div
+            class="industry-chip"
+            :class="{ active: selectedIndustry === '' }"
+            @click="setIndustry('')"
+          >全部</div>
+          <div
+            v-for="ind in industryOptions"
+            :key="ind.value"
+            class="industry-chip"
+            :class="{ active: selectedIndustry === ind.value }"
+            @click="setIndustry(ind.value)"
+          >{{ ind.label }}</div>
+        </div>
+      </div>
+      <div class="panel-section">
+        <label class="panel-label">时间范围</label>
+        <div class="time-chips">
+          <div class="time-chip" :class="{ active: timeRange === 'all' }" @click="setTimeRange('all')">全部</div>
+          <div class="time-chip" :class="{ active: timeRange === '7d' }" @click="setTimeRange('7d')">近7天</div>
+          <div class="time-chip" :class="{ active: timeRange === '30d' }" @click="setTimeRange('30d')">近30天</div>
         </div>
       </div>
     </div>
 
-    <!-- 视图切换 -->
-    <div class="view-toggle">
-      <div
-        class="toggle-btn"
-        :class="{ active: viewMode === 'list' }"
-        @click="viewMode = 'list'"
-      >
-        📋 列表
+    <!-- 高价值资讯高亮区 -->
+    <div v-if="highValueNews.length > 0 && activeCategory === 'all' && !hasActiveFilters" class="high-value-section">
+      <div class="section-header">
+        <span class="section-icon">🔥</span>
+        <span class="section-title">高价值商机</span>
+        <span class="section-count">{{ highValueNews.length }}条</span>
       </div>
-      <div
-        class="toggle-btn"
-        :class="{ active: viewMode === 'map' }"
-        @click="viewMode = 'map'"
-      >
-        🗺️ 地图
+      <div class="high-value-list">
+        <div
+          v-for="item in highValueNews.slice(0, 3)"
+          :key="'hv-' + item.id"
+          class="hv-card"
+          @click="goDetail(item.id)"
+        >
+          <div class="hv-score">{{ item.quality_score }}</div>
+          <div class="hv-content">
+            <h3 class="hv-title">{{ item.title }}</h3>
+            <div class="hv-meta">
+              <span class="hv-source">{{ item.source_channel }}</span>
+              <span class="hv-date">{{ formatDate(item.publish_date) }}</span>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
 
     <!-- 资讯列表 -->
-    <div class="news-list" v-if="viewMode === 'list'">
-      <div v-if="loading" class="loading-state">
-        <van-loading type="spinner" color="#1a2942" />
-        <span>加载中...</span>
+    <div class="news-list">
+      <div v-if="loading && newsList.length === 0" class="loading-state">
+        <div class="spinner"></div>
+        <p>加载中...</p>
       </div>
 
-      <NewsCard
-        v-for="item in newsList"
-        :key="item.id"
-        :news="item"
-      />
-
-      <div v-if="!loading && newsList.length === 0" class="empty-state">
+      <div v-else-if="newsList.length === 0" class="empty-state">
         <div class="empty-icon">📭</div>
-        <div class="empty-text">暂无资讯</div>
+        <p>暂无相关资讯</p>
+        <p class="empty-hint">试试切换分类或调整筛选条件</p>
       </div>
 
-      <div v-if="hasMore" class="load-more" @click="loadMore">
-        <span v-if="!loadingMore">加载更多</span>
-        <van-loading v-else type="spinner" size="20px" color="#1a2942" />
+      <template v-else>
+        <NewsCard
+          v-for="item in newsList"
+          :key="item.id"
+          :news="item"
+          @click="goDetail(item.id)"
+        />
+      </template>
+
+      <!-- 加载更多 -->
+      <div v-if="newsList.length > 0" class="load-more">
+        <div v-if="loading" class="loading-more">
+          <div class="spinner small"></div>
+          <span>加载中...</span>
+        </div>
+        <div v-else-if="hasMore" class="load-more-btn" @click="loadMore">
+          加载更多
+        </div>
+        <div v-else class="no-more">— 已经到底了 —</div>
       </div>
     </div>
 
-    <!-- 地图视图（占位） -->
-    <div class="map-view" v-else>
-      <div class="map-placeholder">
-        <div class="map-icon">🗺️</div>
-        <div class="map-text">地图热力视图</div>
-        <div class="map-hint">接入高德地图后展示区域分布热力图</div>
-      </div>
+    <!-- 浮动按钮 -->
+    <div class="fab" @click="scrollToTop">
+      <span>↑</span>
     </div>
-
-    <!-- 悬浮按钮：线索上报 -->
-    <div class="fab" @click="goToCreateLead">
-      <span>+</span>
-    </div>
-
-    <!-- 底部TabBar -->
-    <TabBar />
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import TabBar from '@/components/TabBar.vue'
-import NewsCard from '@/components/NewsCard.vue'
-import { getNewsList, getNewsStats, type NewsItem, type NewsStats } from '@/api/news'
-import { businessCategoryMap, formatDate } from '@/utils/format'
+import NewsCard from '../components/NewsCard.vue'
+import { getNewsList, getNewsStats, type NewsItem, type NewsQueryParams } from '../api/news'
+import { formatDate } from '../utils/format'
 
 const router = useRouter()
 
-const todayStr = formatDate(new Date(), 'YYYY年MM月DD日 dddd')
-
-const stats = ref<NewsStats | null>(null)
-const newsList = ref<NewsItem[]>([])
-const loading = ref(true)
-const loadingMore = ref(false)
-const page = ref(1)
-const pageSize = 20
-const hasMore = ref(true)
-const viewMode = ref<'list' | 'map'>('list')
-const showSearch = ref(false)
-
-const activeFilter = ref('all')
-const selectedCategory = ref('')
-
-const filterTabs = [
-  { label: '全部', value: 'all' },
-  { label: '招投标', value: 'bidding' },
-  { label: '政策', value: 'policy' },
-  { label: '企业', value: 'enterprise' },
+// 5个一级分类
+const categoryTabs = [
+  { value: 'all', label: '全部', icon: '📰' },
+  { value: 'policy_regulation', label: '政策法规', icon: '📋' },
+  { value: 'bidding_procurement', label: '招投标', icon: '📑' },
+  { value: 'enterprise_dynamics', label: '企业动态', icon: '🏢' },
+  { value: 'industry_economy', label: '产业经济', icon: '📊' },
+  { value: 'financial_market', label: '金融市场', icon: '💹' },
 ]
 
-const businessCategories = computed(() => {
-  return Object.entries(businessCategoryMap).map(([code, info]) => ({
-    code,
-    name: info.name,
-    icon: info.icon,
-    color: info.color,
-  }))
+// 区域选项（标准7类）
+const areaOptions = [
+  { value: 'chaoyang', label: '朝阳' },
+  { value: 'dongcheng', label: '东城' },
+  { value: 'tongzhou', label: '通州' },
+  { value: 'yizhuang', label: '亦庄' },
+  { value: 'beijing', label: '市级' },
+  { value: 'national', label: '全国' },
+]
+
+// 行业选项
+const industryOptions = [
+  { value: 'finance', label: '金融' },
+  { value: 'tech', label: '科技' },
+  { value: 'manufacturing', label: '制造' },
+  { value: 'real_estate', label: '地产' },
+  { value: 'medical', label: '医疗' },
+  { value: 'logistics', label: '物流' },
+]
+
+// 状态
+const newsList = ref<NewsItem[]>([])
+const highValueNews = ref<NewsItem[]>([])
+const loading = ref(false)
+const hasMore = ref(true)
+const page = ref(1)
+const pageSize = 20
+
+const activeCategory = ref('all')
+const activeArea = ref('all')
+const selectedIndustry = ref('')
+const minScore = ref(0)
+const timeRange = ref('all')
+const sortBy = ref('publish_date')
+const showFilterPanel = ref(false)
+
+const stats = ref({ total: 0, highValue: 0, today: 0 })
+
+const hasActiveFilters = computed(() => {
+  return activeArea.value !== 'all' || selectedIndustry.value !== '' || minScore.value > 0 || timeRange.value !== 'all'
 })
 
-onMounted(() => {
-  loadStats()
-  loadNews()
-})
-
-async function loadStats() {
-  try {
-    const res = await getNewsStats()
-    if (res.code === 0) {
-      stats.value = res.data
-    }
-  } catch (error) {
-    console.error('加载统计数据失败:', error)
+function buildQueryParams(): NewsQueryParams {
+  const params: NewsQueryParams = {
+    page: page.value,
+    page_size: pageSize,
+    status: 'published',
+    sort_by: sortBy.value,
+    sort_order: 'desc',
   }
+  if (activeCategory.value !== 'all') {
+    params.business_category = activeCategory.value
+  }
+  if (activeArea.value !== 'all') {
+    params.area_tags = [activeArea.value]
+  }
+  if (selectedIndustry.value) {
+    params.industry_tags = [selectedIndustry.value]
+  }
+  if (minScore.value > 0) {
+    params.min_quality_score = minScore.value
+  }
+  if (timeRange.value === '7d') {
+    const d = new Date()
+    d.setDate(d.getDate() - 7)
+    params.start_date = d.toISOString().split('T')[0]
+  } else if (timeRange.value === '30d') {
+    const d = new Date()
+    d.setDate(d.getDate() - 30)
+    params.start_date = d.toISOString().split('T')[0]
+  }
+  return params
 }
 
-async function loadNews() {
+async function loadNews(reset = false) {
+  if (loading.value) return
+  if (reset) {
+    page.value = 1
+    newsList.value = []
+    hasMore.value = true
+  }
   loading.value = true
-  page.value = 1
-  hasMore.value = true
-
   try {
-    const params: any = {
-      page: page.value,
-      page_size: pageSize,
-      status: 'published',
-      sort_by: 'publish_date',
-      sort_order: 'desc',
-    }
-
-    if (activeFilter.value !== 'all') {
-      params.info_type = activeFilter.value
-    }
-
-    if (selectedCategory.value) {
-      params.business_category = selectedCategory.value
-    }
-
+    const params = buildQueryParams()
     const res = await getNewsList(params)
-    if (res.code === 0) {
-      newsList.value = res.data || []
-      hasMore.value = (res.total || 0) > pageSize
+    const items = res.data || []
+    if (reset) {
+      newsList.value = items
+    } else {
+      // 去重
+      const existingIds = new Set(newsList.value.map(n => n.id))
+      const newItems = items.filter(n => !existingIds.has(n.id))
+      newsList.value = [...newsList.value, ...newItems]
     }
-  } catch (error) {
-    console.error('加载资讯列表失败:', error)
+    hasMore.value = items.length >= pageSize
+  } catch (e) {
+    console.error('加载资讯失败', e)
   } finally {
     loading.value = false
   }
 }
 
-async function loadMore() {
-  if (loadingMore.value || !hasMore.value) return
-
-  loadingMore.value = true
-  page.value++
-
+async function loadHighValue() {
   try {
-    const params: any = {
-      page: page.value,
-      page_size: pageSize,
+    const res = await getNewsList({
+      page: 1,
+      page_size: 10,
       status: 'published',
-      sort_by: 'publish_date',
+      min_quality_score: 80,
+      sort_by: 'quality_score',
       sort_order: 'desc',
-    }
-
-    if (activeFilter.value !== 'all') {
-      params.info_type = activeFilter.value
-    }
-
-    if (selectedCategory.value) {
-      params.business_category = selectedCategory.value
-    }
-
-    const res = await getNewsList(params)
-    if (res.code === 0) {
-      // 按id去重，防止offset分页在数据插入时产生重复资讯
-      const existingIds = new Set(newsList.value.map(n => n.id))
-      const newItems = (res.data || []).filter(n => !existingIds.has(n.id))
-      newsList.value = [...newsList.value, ...newItems]
-      hasMore.value = newsList.value.length < (res.total || 0)
-    }
-  } catch (error) {
-    console.error('加载更多失败:', error)
-  } finally {
-    loadingMore.value = false
+    })
+    highValueNews.value = res.data || []
+  } catch (e) {
+    console.error('加载高价值资讯失败', e)
   }
 }
 
-function handleFilterChange(value: string) {
-  activeFilter.value = value
-  loadNews()
+async function loadStats() {
+  try {
+    const res = await getNewsStats()
+    stats.value = {
+      total: (res.policy_count || 0) + (res.bidding_count || 0) + (res.enterprise_count || 0),
+      highValue: res.high_value_count || 0,
+      today: res.today_new || 0,
+    }
+  } catch (e) {
+    console.error('加载统计失败', e)
+  }
 }
 
-function handleCategoryChange(code: string) {
-  selectedCategory.value = selectedCategory.value === code ? '' : code
-  loadNews()
+function switchCategory(cat: string) {
+  activeCategory.value = cat
+  loadNews(true)
 }
 
-function goToCreateLead() {
-  router.push('/leads/create')
+function setArea(area: string) {
+  activeArea.value = area
+  loadNews(true)
 }
+
+function setIndustry(ind: string) {
+  selectedIndustry.value = ind
+  loadNews(true)
+}
+
+function setTimeRange(range: string) {
+  timeRange.value = range
+  loadNews(true)
+}
+
+function applyFilters() {
+  loadNews(true)
+}
+
+function toggleSort() {
+  sortBy.value = sortBy.value === 'publish_date' ? 'quality_score' : 'publish_date'
+  loadNews(true)
+}
+
+function loadMore() {
+  if (!hasMore.value || loading.value) return
+  page.value++
+  loadNews(false)
+}
+
+function goDetail(id: string) {
+  router.push(`/news/${id}`)
+}
+
+function scrollToTop() {
+  window.scrollTo({ top: 0, behavior: 'smooth' })
+}
+
+onMounted(() => {
+  loadNews(true)
+  loadHighValue()
+  loadStats()
+})
 </script>
 
-<style lang="scss" scoped>
+<style scoped>
 .home-page {
-  background-color: #f5f7fa;
   min-height: 100vh;
+  background: #f5f7fa;
+  padding-bottom: 80px;
 }
 
-.page-header {
-  background: linear-gradient(135deg, #1a2942 0%, #2c3e5a 100%);
+/* Header */
+.app-header {
+  background: linear-gradient(135deg, #1a56db 0%, #1e40af 100%);
   color: #fff;
-  padding: 20px 16px 24px;
-  padding-top: calc(20px + env(safe-area-inset-top));
-  border-radius: 0 0 20px 20px;
+  padding: 16px 16px 0;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  box-shadow: 0 2px 12px rgba(26, 86, 219, 0.15);
 }
 
 .header-top {
   display: flex;
   justify-content: space-between;
-  align-items: flex-start;
-  margin-bottom: 20px;
-
-  .page-title {
-    font-size: 22px;
-    font-weight: 700;
-    margin-bottom: 4px;
-  }
-
-  .page-subtitle {
-    font-size: 13px;
-    opacity: 0.7;
-  }
-
-  .header-actions {
-    .search-icon {
-      font-size: 20px;
-      cursor: pointer;
-    }
-  }
+  align-items: center;
+  margin-bottom: 14px;
 }
 
-.stat-board {
+.header-title {
   display: flex;
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 12px;
-  padding: 16px 8px;
-  backdrop-filter: blur(10px);
+  align-items: center;
+  gap: 10px;
+}
+
+.logo-icon {
+  font-size: 28px;
+}
+
+.header-title h1 {
+  font-size: 18px;
+  font-weight: 700;
+  margin: 0;
+  letter-spacing: 0.5px;
+}
+
+.header-sub {
+  font-size: 11px;
+  opacity: 0.8;
+  margin: 2px 0 0;
+}
+
+.header-stats {
+  display: flex;
+  gap: 16px;
 }
 
 .stat-item {
-  flex: 1;
   text-align: center;
-
-  .stat-number {
-    font-size: 24px;
-    font-weight: 700;
-    margin-bottom: 4px;
-
-    &.high-value {
-      color: #ffd700;
-    }
-  }
-
-  .stat-label {
-    font-size: 11px;
-    opacity: 0.8;
-    margin-bottom: 2px;
-  }
-
-  .stat-trend {
-    font-size: 10px;
-
-    &.up {
-      color: #52c41a;
-    }
-
-    &.down {
-      color: #ff4d4f;
-    }
-  }
 }
 
-.filter-section {
-  background-color: #fff;
-  padding: 12px 16px;
-  margin: -12px 12px 0;
-  border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
-  position: relative;
-  z-index: 10;
+.stat-num {
+  display: block;
+  font-size: 20px;
+  font-weight: 700;
 }
 
-.filter-tabs {
+.stat-label {
+  font-size: 10px;
+  opacity: 0.75;
+}
+
+.stat-item.high-value .stat-num {
+  color: #fbbf24;
+}
+
+/* 分类导航 */
+.category-nav {
   display: flex;
-  gap: 20px;
-  margin-bottom: 12px;
-  padding-bottom: 12px;
-  border-bottom: 1px solid #f0f0f0;
+  gap: 4px;
+  overflow-x: auto;
+  padding-bottom: 10px;
+  scrollbar-width: none;
 }
 
-.filter-tab {
-  font-size: 14px;
-  color: #8c8c8c;
+.category-nav::-webkit-scrollbar {
+  display: none;
+}
+
+.cat-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 8px 12px;
+  border-radius: 10px;
   cursor: pointer;
-  position: relative;
-  padding-bottom: 4px;
-
-  &.active {
-    color: #1a2942;
-    font-weight: 600;
-
-    &::after {
-      content: '';
-      position: absolute;
-      bottom: -13px;
-      left: 50%;
-      transform: translateX(-50%);
-      width: 24px;
-      height: 3px;
-      background-color: #1a2942;
-      border-radius: 2px;
-    }
-  }
+  transition: all 0.2s;
+  min-width: 56px;
+  flex-shrink: 0;
+  background: rgba(255, 255, 255, 0.1);
 }
 
-.category-filters {
+.cat-item.active {
+  background: rgba(255, 255, 255, 0.25);
+  transform: translateY(-1px);
+}
+
+.cat-icon {
+  font-size: 18px;
+  margin-bottom: 2px;
+}
+
+.cat-label {
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+/* 筛选栏 */
+.filter-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 16px;
+  background: #fff;
+  border-bottom: 1px solid #eef0f4;
+  position: sticky;
+  top: 108px;
+  z-index: 99;
+}
+
+.filter-scroll {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  flex: 1;
+  scrollbar-width: none;
+}
+
+.filter-scroll::-webkit-scrollbar {
+  display: none;
+}
+
+.filter-chip {
+  padding: 5px 12px;
+  border-radius: 14px;
+  font-size: 12px;
+  color: #595959;
+  background: #f0f2f5;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s;
+}
+
+.filter-chip.active {
+  background: #e6f0ff;
+  color: #1a56db;
+  font-weight: 600;
+}
+
+.filter-actions {
+  display: flex;
+  gap: 8px;
+  margin-left: 8px;
+  flex-shrink: 0;
+}
+
+.filter-btn, .sort-btn {
+  padding: 5px 10px;
+  border-radius: 14px;
+  font-size: 12px;
+  color: #595959;
+  background: #f0f2f5;
+  cursor: pointer;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  position: relative;
+}
+
+.filter-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #1a56db;
+  position: absolute;
+  top: 2px;
+  right: 2px;
+}
+
+/* 筛选面板 */
+.filter-panel {
+  background: #fff;
+  padding: 14px 16px;
+  border-bottom: 1px solid #eef0f4;
+}
+
+.panel-section {
+  margin-bottom: 12px;
+}
+
+.panel-section:last-child {
+  margin-bottom: 0;
+}
+
+.panel-label {
+  font-size: 12px;
+  color: #8c8c8c;
+  margin-bottom: 8px;
+  display: block;
+}
+
+.score-slider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.score-slider input[type="range"] {
+  flex: 1;
+  accent-color: #1a56db;
+}
+
+.score-value {
+  font-size: 13px;
+  font-weight: 600;
+  color: #1a56db;
+  min-width: 50px;
+}
+
+.industry-chips, .time-chips {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
 }
 
-.category-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 6px 12px;
-  border-radius: 16px;
+.industry-chip, .time-chip {
+  padding: 4px 12px;
+  border-radius: 12px;
   font-size: 12px;
   color: #595959;
-  background-color: #f5f5f5;
-  border: 1px solid transparent;
+  background: #f0f2f5;
   cursor: pointer;
-  transition: all 0.2s;
-
-  .chip-icon {
-    font-size: 12px;
-  }
-
-  &.active {
-    font-weight: 500;
-  }
 }
 
-.view-toggle {
+.industry-chip.active, .time-chip.active {
+  background: #e6f0ff;
+  color: #1a56db;
+  font-weight: 600;
+}
+
+/* 高价值区 */
+.high-value-section {
+  margin: 12px 16px;
+  background: linear-gradient(135deg, #fff7ed 0%, #fef3c7 100%);
+  border-radius: 14px;
+  padding: 14px;
+  border: 1px solid #fde68a;
+}
+
+.section-header {
   display: flex;
-  justify-content: flex-end;
-  padding: 12px 16px 8px;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.section-icon {
+  font-size: 16px;
+}
+
+.section-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: #92400e;
+}
+
+.section-count {
+  font-size: 11px;
+  color: #b45309;
+  background: rgba(180, 83, 9, 0.1);
+  padding: 2px 8px;
+  border-radius: 10px;
+  margin-left: auto;
+}
+
+.high-value-list {
+  display: flex;
+  flex-direction: column;
   gap: 8px;
 }
 
-.toggle-btn {
-  padding: 6px 12px;
-  border-radius: 16px;
-  font-size: 12px;
-  color: #8c8c8c;
-  background-color: #fff;
+.hv-card {
+  display: flex;
+  gap: 10px;
+  padding: 10px;
+  background: rgba(255, 255, 255, 0.7);
+  border-radius: 10px;
   cursor: pointer;
-  transition: all 0.2s;
-
-  &.active {
-    color: #1a2942;
-    background-color: #e6f7ff;
-    font-weight: 500;
-  }
+  transition: background 0.2s;
 }
 
+.hv-card:active {
+  background: rgba(255, 255, 255, 0.9);
+}
+
+.hv-score {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.hv-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.hv-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: #1f2937;
+  margin: 0 0 4px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  line-height: 1.4;
+}
+
+.hv-meta {
+  display: flex;
+  gap: 8px;
+  font-size: 11px;
+  color: #92400e;
+}
+
+.hv-source {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 120px;
+}
+
+/* 资讯列表 */
 .news-list {
-  padding: 0 12px 20px;
+  padding: 12px 16px;
 }
 
-.loading-state {
+.loading-state, .empty-state {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 60px 0;
-  gap: 12px;
+  padding: 60px 20px;
   color: #8c8c8c;
-  font-size: 14px;
 }
 
-.empty-state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 60px 0;
+.empty-icon {
+  font-size: 48px;
+  margin-bottom: 12px;
+}
 
-  .empty-icon {
-    font-size: 48px;
-    margin-bottom: 12px;
-  }
+.empty-hint {
+  font-size: 12px;
+  color: #bfbfbf;
+  margin-top: 4px;
+}
 
-  .empty-text {
-    font-size: 14px;
-    color: #8c8c8c;
-  }
+.spinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid #e6f0ff;
+  border-top-color: #1a56db;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  margin-bottom: 12px;
+}
+
+.spinner.small {
+  width: 16px;
+  height: 16px;
+  margin-bottom: 0;
+  margin-right: 8px;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
 }
 
 .load-more {
+  padding: 20px 0;
   text-align: center;
-  padding: 16px;
-  color: #8c8c8c;
-  font-size: 14px;
-  cursor: pointer;
 }
 
-.map-view {
-  padding: 12px;
-  min-height: 400px;
-}
-
-.map-placeholder {
-  background-color: #fff;
-  border-radius: 12px;
-  padding: 60px 20px;
-  text-align: center;
-
-  .map-icon {
-    font-size: 64px;
-    margin-bottom: 16px;
-  }
-
-  .map-text {
-    font-size: 18px;
-    font-weight: 600;
-    color: #262626;
-    margin-bottom: 8px;
-  }
-
-  .map-hint {
-    font-size: 13px;
-    color: #8c8c8c;
-  }
-}
-
-.fab {
-  position: fixed;
-  right: 16px;
-  bottom: 80px;
-  width: 56px;
-  height: 56px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, #1a2942 0%, #2c3e5a 100%);
-  color: #fff;
+.loading-more {
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 4px 16px rgba(26, 41, 66, 0.4);
-  z-index: 99;
-  font-size: 28px;
-  font-weight: 300;
-  cursor: pointer;
+  font-size: 13px;
+  color: #8c8c8c;
+}
 
-  &:active {
-    transform: scale(0.95);
-  }
+.load-more-btn {
+  display: inline-block;
+  padding: 8px 24px;
+  background: #fff;
+  border: 1px solid #d9d9d9;
+  border-radius: 20px;
+  font-size: 13px;
+  color: #595959;
+  cursor: pointer;
+}
+
+.no-more {
+  font-size: 12px;
+  color: #bfbfbf;
+}
+
+/* FAB */
+.fab {
+  position: fixed;
+  right: 16px;
+  bottom: 90px;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #1a56db, #1e40af);
+  color: #fff;
+  font-size: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 12px rgba(26, 86, 219, 0.3);
+  cursor: pointer;
+  z-index: 50;
+  transition: transform 0.2s;
+}
+
+.fab:active {
+  transform: scale(0.92);
 }
 </style>

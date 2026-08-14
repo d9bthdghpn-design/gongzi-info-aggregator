@@ -71,8 +71,8 @@ function handleTabClick(path: string) {
   cursor: pointer;
 
   &.active {
-    color: #1a2942;
-    font-weight: 500;
+    color: #1a56db;
+    font-weight: 600;
   }
 
   .tab-icon {

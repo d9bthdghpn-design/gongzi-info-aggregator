@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="lead-detail-page">
     <!-- 顶部导航 -->
     <div class="nav-bar">
@@ -12,7 +12,7 @@
     </div>
 
     <div v-if="loading" class="loading-state">
-      <van-loading type="spinner" color="#1a2942" />
+      <van-loading type="spinner" color="#1a56db" />
       <span>加载中...</span>
     </div>
 
@@ -450,7 +450,7 @@ async function submitFollowup() {
 
   .add-btn {
     font-size: 13px;
-    color: #1a2942;
+    color: #1a56db;
     font-weight: normal;
     cursor: pointer;
   }
@@ -528,7 +528,7 @@ async function submitFollowup() {
   top: 4px;
   width: 10px;
   height: 10px;
-  background-color: #1a2942;
+  background-color: #1a56db;
   border-radius: 50%;
 
   &::before {
@@ -601,7 +601,7 @@ async function submitFollowup() {
   cursor: pointer;
 
   &.primary {
-    background: linear-gradient(135deg, #1a2942 0%, #2c3e5a 100%);
+    background: linear-gradient(135deg, #1a56db 0%, #1e40af 100%);
     color: #fff;
   }
 
@@ -666,7 +666,7 @@ async function submitFollowup() {
     outline: none;
 
     &:focus {
-      border-color: #1a2942;
+      border-color: #1a56db;
       background-color: #fff;
     }
   }
@@ -686,7 +686,7 @@ async function submitFollowup() {
 .submit-btn {
   width: 100%;
   height: 44px;
-  background: linear-gradient(135deg, #1a2942 0%, #2c3e5a 100%);
+  background: linear-gradient(135deg, #1a56db 0%, #1e40af 100%);
   color: #fff;
   border: none;
   border-radius: 22px;

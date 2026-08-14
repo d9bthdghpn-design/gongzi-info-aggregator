@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="topic-detail-page">
     <!-- 顶部导航 -->
     <div class="nav-bar">
@@ -39,7 +39,7 @@
       </div>
 
       <div v-if="loading" class="loading-state">
-        <van-loading type="spinner" color="#1a2942" />
+        <van-loading type="spinner" color="#1a56db" />
         <span>加载中...</span>
       </div>
 
@@ -57,7 +57,7 @@
 
         <div v-if="hasMore" class="load-more" @click="loadMore">
           <span v-if="!loadingMore">加载更多</span>
-          <van-loading v-else type="spinner" size="20px" color="#1a2942" />
+          <van-loading v-else type="spinner" size="20px" color="#1a56db" />
         </div>
       </div>
     </div>
@@ -175,7 +175,7 @@ function goBack() {
 }
 
 .topic-cover {
-  background: linear-gradient(135deg, #1a2942 0%, #2c3e5a 100%);
+  background: linear-gradient(135deg, #1a56db 0%, #1e40af 100%);
   color: #fff;
   padding: 20px 16px 30px;
   padding-top: calc(20px + env(safe-area-inset-top) + 44px);

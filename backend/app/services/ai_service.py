@@ -141,7 +141,7 @@ class AIService:
         """模拟AI响应（开发测试用）"""
         if "分类" in system_prompt or "classify" in system_prompt.lower():
             return json.dumps({
-                "business_category": "loan",
+                "business_category": "policy_regulation",
                 "info_type": "policy",
                 "area_tags": ["chaoyang"],
                 "industry_tags": ["tech"],
@@ -165,10 +165,10 @@ class AIService:
     def classify_news(self, title: str, content: str) -> dict:
         """AI分类打标"""
         system_prompt = """你是一个银行对公业务资讯分类专家。请根据资讯内容，给出以下分类结果：
-1. business_category: 业务分类（deposit存款/loan贷款/investment_bank投行/treasury财资/supply_chain供应链）
+1. business_category: 内容分类（policy_regulation政策法规/bidding_procurement招投标采购/enterprise_dynamics企业动态/industry_economy产业经济/financial_market金融市场）
 2. info_type: 资讯类型（policy政策/bidding招投标/enterprise企业/park园区）
-3. area_tags: 区域标签数组（如chaoyang朝阳区、haidian海淀区、fengtai丰台区等）
-4. industry_tags: 行业标签数组（如tech信息技术、finance金融、manufacturing制造业等）
+3. area_tags: 区域标签数组，仅限以下标准值：chaoyang(朝阳区)、dongcheng(东城区)、tongzhou(通州区)、yizhuang(亦庄/经开区)、beijing(北京市级)、national(全国性)、other(其他地区)；无明确区域则为空数组
+4. industry_tags: 行业标签数组（如tech信息技术、finance金融、manufacturing制造业、real_estate房地产、medical医疗等）
 
 请严格以JSON格式返回，不要有其他文字。"""
 

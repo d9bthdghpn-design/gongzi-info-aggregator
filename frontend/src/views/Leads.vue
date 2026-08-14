@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="leads-page page-container">
     <!-- 顶部Header -->
     <div class="page-header">
@@ -44,7 +44,7 @@
     </div>
 
     <div v-if="loading" class="loading-state">
-      <van-loading type="spinner" color="#1a2942" />
+      <van-loading type="spinner" color="#1a56db" />
       <span>加载中...</span>
     </div>
 
@@ -109,7 +109,7 @@
 
       <div v-if="hasMore" class="load-more" @click="loadMore">
         <span v-if="!loadingMore">加载更多</span>
-        <van-loading v-else type="spinner" size="20px" color="#1a2942" />
+        <van-loading v-else type="spinner" size="20px" color="#1a56db" />
       </div>
     </div>
 
@@ -279,7 +279,7 @@ function areaName(code?: string): string {
 }
 
 .page-header {
-  background: linear-gradient(135deg, #1a2942 0%, #2c3e5a 100%);
+  background: linear-gradient(135deg, #1a56db 0%, #1e40af 100%);
   color: #fff;
   padding: 20px 16px 20px;
   padding-top: calc(20px + env(safe-area-inset-top));
@@ -336,7 +336,7 @@ function areaName(code?: string): string {
   transition: all 0.2s;
 
   &.active {
-    background-color: #1a2942;
+    background-color: #1a56db;
     color: #fff;
     font-weight: 500;
   }
@@ -481,7 +481,7 @@ function areaName(code?: string): string {
 
   .claim-btn {
     padding: 6px 20px;
-    background-color: #1a2942;
+    background-color: #1a56db;
     color: #fff;
     border: none;
     border-radius: 16px;
@@ -509,7 +509,7 @@ function areaName(code?: string): string {
 
   .create-btn {
     padding: 10px 24px;
-    background-color: #1a2942;
+    background-color: #1a56db;
     color: #fff;
     border: none;
     border-radius: 20px;

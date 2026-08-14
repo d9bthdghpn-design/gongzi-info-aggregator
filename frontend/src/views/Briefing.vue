@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="briefing-page page-container">
     <!-- 顶部Header -->
     <div class="page-header">
@@ -18,7 +18,7 @@
     </div>
 
     <div v-if="loading" class="loading-state">
-      <van-loading type="spinner" color="#1a2942" />
+      <van-loading type="spinner" color="#1a56db" />
       <span>加载中...</span>
     </div>
 
@@ -174,7 +174,7 @@ function goToDetail(id: string) {
 }
 
 .page-header {
-  background: linear-gradient(135deg, #1a2942 0%, #2c3e5a 100%);
+  background: linear-gradient(135deg, #1a56db 0%, #1e40af 100%);
   color: #fff;
   padding: 20px 16px 60px;
   padding-top: calc(20px + env(safe-area-inset-top));
@@ -255,7 +255,7 @@ function goToDetail(id: string) {
   .overview-number {
     font-size: 28px;
     font-weight: 700;
-    color: #1a2942;
+    color: #1a56db;
     margin-bottom: 4px;
 
     &.high-value {

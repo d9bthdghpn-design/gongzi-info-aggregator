@@ -36,13 +36,13 @@ export function formatRelativeTime(date: string | Date | undefined): string {
   }
 }
 
-// 业务分类映射
+// 内容分类映射（v3新5类）
 export const businessCategoryMap: Record<string, { name: string; color: string; icon: string }> = {
-  deposit: { name: '存款业务', color: '#27ae60', icon: '💰' },
-  loan: { name: '贷款业务', color: '#e74c3c', icon: '🏦' },
-  investment_bank: { name: '投行业务', color: '#9b59b6', icon: '📈' },
-  treasury: { name: '财资业务', color: '#f39c12', icon: '💎' },
-  supply_chain: { name: '供应链金融', color: '#1abc9c', icon: '🔗' },
+  policy_regulation: { name: '政策法规', color: '#1a56db', icon: '📋' },
+  bidding_procurement: { name: '招投标采购', color: '#0e7490', icon: '📑' },
+  enterprise_dynamics: { name: '企业动态', color: '#059669', icon: '🏢' },
+  industry_economy: { name: '产业经济', color: '#d97706', icon: '📊' },
+  financial_market: { name: '金融市场', color: '#7c3aed', icon: '💹' },
 }
 
 // 资讯类型映射
@@ -53,15 +53,20 @@ export const infoTypeMap: Record<string, { name: string; color: string }> = {
   park: { name: '园区动态', color: '#9b59b6' },
 }
 
-// 区域标签映射
+// 区域标签映射（v3标准7类）
 export const areaTagMap: Record<string, string> = {
   chaoyang: '朝阳区',
+  dongcheng: '东城区',
+  tongzhou: '通州区',
+  yizhuang: '亦庄经开区',
+  beijing: '北京市级',
+  national: '全国性',
+  other: '其他地区',
+  // 兼容旧标签
   haidian: '海淀区',
   fengtai: '丰台区',
-  dongcheng: '东城区',
   xicheng: '西城区',
   shijingshan: '石景山区',
-  tongzhou: '通州区',
   changping: '昌平区',
   daxing: '大兴区',
 }

@@ -77,6 +77,8 @@ export interface NewsQueryParams {
   business_category?: string
   info_type?: string
   status?: string
+  area_tags?: string[]
+  industry_tags?: string[]
   min_quality_score?: number
   start_date?: string
   end_date?: string

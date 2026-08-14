@@ -43,13 +43,13 @@ class BriefingService:
             TagDictionary.is_active == True,
         ).order_by(TagDictionary.sort_order).all()
 
-        # 按业务分类分组
+        # 按内容分类分组（v3新5类）
         category_icons = {
-            "deposit": "💰",
-            "loan": "🏦",
-            "investment_bank": "📈",
-            "treasury": "💎",
-            "supply_chain": "🔗",
+            "policy_regulation": "📋",
+            "bidding_procurement": "📑",
+            "enterprise_dynamics": "🏢",
+            "industry_economy": "📊",
+            "financial_market": "💹",
         }
 
         categories = {}

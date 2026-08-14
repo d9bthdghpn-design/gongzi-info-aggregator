@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="login-page">
     <div class="login-header">
       <div class="logo">🏦</div>
@@ -93,7 +93,7 @@ async function handleLogin() {
 <style lang="scss" scoped>
 .login-page {
   min-height: 100vh;
-  background: linear-gradient(180deg, #1a2942 0%, #2c3e5a 50%, #f5f7fa 50%);
+  background: linear-gradient(180deg, #1a56db 0%, #1e40af 50%, #f5f7fa 50%);
   display: flex;
   flex-direction: column;
   padding: 0 24px;
@@ -159,7 +159,7 @@ async function handleLogin() {
 .login-btn {
   width: 100%;
   height: 48px;
-  background: linear-gradient(135deg, #1a2942 0%, #2c3e5a 100%);
+  background: linear-gradient(135deg, #1a56db 0%, #1e40af 100%);
   color: #fff;
   border: none;
   border-radius: 24px;

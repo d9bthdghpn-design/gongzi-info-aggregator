@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="lead-create-page">
     <!-- 顶部导航 -->
     <div class="nav-bar">
@@ -309,7 +309,7 @@ async function handleSubmit() {
 
   .nav-actions {
     font-size: 14px;
-    color: #1a2942;
+    color: #1a56db;
     cursor: pointer;
     font-weight: 500;
 
@@ -377,7 +377,7 @@ async function handleSubmit() {
     transition: border-color 0.2s;
 
     &:focus {
-      border-color: #1a2942;
+      border-color: #1a56db;
       background-color: #fff;
     }
   }
@@ -416,8 +416,8 @@ async function handleSubmit() {
 
   &.checked {
     background-color: #e6f4ff;
-    border-color: #1a2942;
-    color: #1a2942;
+    border-color: #1a56db;
+    color: #1a56db;
   }
 }
 
@@ -428,7 +428,7 @@ async function handleSubmit() {
 .submit-btn {
   width: 100%;
   height: 48px;
-  background: linear-gradient(135deg, #1a2942 0%, #2c3e5a 100%);
+  background: linear-gradient(135deg, #1a56db 0%, #1e40af 100%);
   color: #fff;
   border: none;
   border-radius: 24px;

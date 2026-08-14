@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="profile-page page-container">
     <!-- 顶部Header -->
     <div class="page-header">
@@ -152,7 +152,7 @@ async function handleLogout() {
 }
 
 .page-header {
-  background: linear-gradient(135deg, #1a2942 0%, #2c3e5a 100%);
+  background: linear-gradient(135deg, #1a56db 0%, #1e40af 100%);
   color: #fff;
   padding: 30px 16px 60px;
   padding-top: calc(30px + env(safe-area-inset-top));
@@ -219,7 +219,7 @@ async function handleLogout() {
   .stat-num {
     font-size: 24px;
     font-weight: 700;
-    color: #1a2942;
+    color: #1a56db;
     margin-bottom: 4px;
 
     &.converted {
