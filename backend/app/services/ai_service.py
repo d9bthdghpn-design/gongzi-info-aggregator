@@ -141,17 +141,18 @@ class AIService:
         """模拟AI响应（开发测试用）"""
         if "分类" in system_prompt or "classify" in system_prompt.lower():
             return json.dumps({
-                "business_category": "policy_regulation",
+                "business_category": "policy_ref",
                 "info_type": "policy",
                 "area_tags": ["chaoyang"],
-                "industry_tags": ["tech"],
+                "industry_tags": ["finance"],
+                "opportunity_type": "监管政策",
                 "is_bank_relevant": True,
             }, ensure_ascii=False)
         elif "摘要" in system_prompt or "summary" in system_prompt.lower():
             return "这是一条重要的资讯摘要，包含了核心业务信息和关键数据。"
         elif "启示" in system_prompt or "tip" in system_prompt.lower():
             return "💡 可重点关注相关企业，提供定制化金融服务方案。"
-        elif "打分" in system_prompt or "score" in system_prompt.lower():
+        elif "打分" in system_prompt or "score" in system_prompt.lower() or "评估" in system_prompt:
             return json.dumps({
                 "event_severity": 75,
                 "impact_scope": 70,
@@ -164,13 +165,25 @@ class AIService:
         return ""
 
     def classify_news(self, title: str, content: str) -> dict:
-        """AI分类打标"""
-        system_prompt = """你是一个银行对公业务资讯分类专家。请根据资讯内容，给出以下分类结果：
-1. business_category: 内容分类（policy_regulation政策法规/bidding_procurement招投标采购/enterprise_dynamics企业动态/industry_economy产业经济/financial_market金融市场）
+        """AI分类打标 - v4行动分类体系"""
+        system_prompt = """你是一个银行对公业务商机情报分类专家。请根据资讯内容，给出以下分类结果：
+
+1. business_category: 行动分类（仅限以下5个值）
+   - bid_action（可投标项目）：政府采购、工程招标、中标公告、产权交易、PPP项目等可直接参与投标的商机
+   - fin_demand（融资需求）：企业发债、增资扩股、定增、并购、贷款需求、融资担保、上市辅导等明确融资信号
+   - account_chance（开户与结算机会）：新设企业、企业变更、迁移注册地、园区入驻等可能带来开户结算的机会
+   - park_project（区域产业动态）：园区招商、产业政策落地、区域经济数据、重点项目开工、楼宇经济等区域动态
+   - policy_ref（监管与政策）：金融监管、财政税收、产业政策、行业规范等需合规参考或客户提示的政策
+
 2. info_type: 资讯类型（policy政策/bidding招投标/enterprise企业/park园区）
-3. area_tags: 区域标签数组，仅限以下标准值：chaoyang(朝阳区)、dongcheng(东城区)、tongzhou(通州区)、yizhuang(亦庄/经开区)、beijing(北京市级)、national(全国性)、other(其他地区)；无明确区域则为空数组
-4. industry_tags: 行业标签数组（如tech信息技术、finance金融、manufacturing制造业、real_estate房地产、medical医疗等）
-5. is_bank_relevant: 是否与银行对公业务相关（true/false）。判断标准：只要资讯内容能转化为银行对公业务机会即为相关，包括但不限于：存贷款、结算、投行、财资、供应链金融、普惠金融、金融市场、监管政策、企业融资、招投标、产业政策、区域经济、园区动态、重点企业动态等。仅当资讯与银行业务完全无关（如纯娱乐、体育、社会八卦、个人生活类）时才为false。
+
+3. area_tags: 区域标签数组，仅限：chaoyang(朝阳)、dongcheng(东城)、tongzhou(通州)、yizhuang(亦庄/经开区)、beijing(北京市级)、national(全国性)、other(其他)；无明确区域则空数组
+
+4. industry_tags: 行业标签数组（北京主导产业）：finance(金融)、tech(科技)、culture(文化)、business_service(商务服务)、advanced_manufacturing(先进制造)、medical_health(医药健康)、digital_economy(数字经济)、other(其他)
+
+5. opportunity_type: 商机类型标签（单个值）：招投标、融资、并购、开户、补贴申报、土地出让、其他
+
+6. is_bank_relevant: 是否与银行对公业务相关（true/false）。只要能转化为银行对公业务机会即为相关，仅纯娱乐/体育/社会八卦/个人生活类为false
 
 请严格以JSON格式返回，不要有其他文字。"""
 
@@ -186,7 +199,8 @@ class AIService:
                 "info_type": None,
                 "area_tags": [],
                 "industry_tags": [],
-                "is_bank_relevant": True,  # 异常时默认相关，避免误杀
+                "opportunity_type": "其他",
+                "is_bank_relevant": True,
             }, 0, 0
 
     def generate_summary(self, title: str, content: str) -> str:

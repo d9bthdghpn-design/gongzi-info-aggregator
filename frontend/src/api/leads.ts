@@ -123,3 +123,17 @@ export function getLeadFollowups(
 export function addLeadFollowup(leadId: string, data: any): Promise<ApiResponse<LeadFollowup>> {
   return request.post(`/leads/${leadId}/followups`, data)
 }
+
+// 从资讯转线索
+export function createLeadFromNews(newsId: string, companyName?: string, priority = 3): Promise<ApiResponse<LeadItem>> {
+  return request.post('/leads/from-news', {
+    news_id: newsId,
+    company_name: companyName,
+    priority,
+  })
+}
+
+// 转化看板
+export function getLeadDashboard(): Promise<ApiResponse<any>> {
+  return request.get('/leads/dashboard')
+}

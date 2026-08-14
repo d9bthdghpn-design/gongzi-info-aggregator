@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div class="profile-page page-container">
     <!-- 顶部Header -->
     <div class="page-header">
@@ -40,6 +40,11 @@
         <div class="menu-item" @click="goTo('/leads')">
           <span class="menu-icon">🎯</span>
           <span class="menu-text">我的线索</span>
+          <span class="menu-arrow">›</span>
+        </div>
+        <div class="menu-item" @click="goTo('/dashboard')">
+          <span class="menu-icon">📊</span>
+          <span class="menu-text">转化看板</span>
           <span class="menu-arrow">›</span>
         </div>
         <div class="menu-item" @click="goTo('/briefing')">

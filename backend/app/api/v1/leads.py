@@ -6,11 +6,12 @@ from sqlalchemy.orm import Session
 from typing import Optional, List
 
 from app.database import get_db
-from app.models import User
+from app.models import User, NewsItem
 from app.core.security import get_current_user, require_role
 from app.schemas.lead import (
     LeadSchema, LeadCreateSchema, LeadUpdateSchema, LeadQuerySchema,
     LeadFollowupSchema, LeadFollowupCreateSchema, LeadAssignSchema,
+    LeadFromNewsSchema, LeadDashboardSchema,
 )
 from app.schemas.base import PageResponse, DataResponse, ListResponse
 from app.services import lead_service, lead_followup_service
@@ -136,6 +137,42 @@ def create_lead(
     return DataResponse(data=LeadSchema.model_validate(lead))
 
 
+@router.post("/from-news", response_model=DataResponse[LeadSchema])
+def create_lead_from_news(
+    obj_in: LeadFromNewsSchema,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """从资讯转线索"""
+    news = db.query(NewsItem).filter(NewsItem.id == obj_in.news_id).first()
+    if not news:
+        raise BusinessException(code=404, message="资讯不存在")
+
+    # 从资讯提取线索信息
+    company_name = obj_in.company_name or news.title[:80]
+    industry = (news.industry_tags or [None])[0] if news.industry_tags else None
+    area = (news.area_tags or [None])[0] if news.area_tags else None
+
+    lead_data = LeadCreateSchema(
+        company_name=company_name,
+        industry=industry,
+        area=area,
+        project_desc=f"来源资讯：{news.title}\n{news.content_summary or ''}",
+        source_news_id=news.id,
+        priority=obj_in.priority,
+    )
+    lead = lead_service.create_lead(db, lead_data, str(current_user.id))
+    lead.lead_source = "news"
+    lead.source_category = news.business_category
+
+    # 增加资讯的线索计数
+    news.lead_count = (news.lead_count or 0) + 1
+    db.commit()
+    db.refresh(lead)
+
+    return DataResponse(data=LeadSchema.model_validate(lead))
+
+
 @router.put("/{lead_id}", response_model=DataResponse[LeadSchema])
 def update_lead(
     lead_id: str,
@@ -187,6 +224,91 @@ def assign_lead(
     """分配线索（管理员）"""
     lead = lead_service.assign_lead(db, lead_id, obj_in)
     return DataResponse(data=LeadSchema.model_validate(lead))
+
+
+# ==================== 转化看板 ====================
+
+@router.get("/dashboard", response_model=DataResponse[LeadDashboardSchema])
+def get_lead_dashboard(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """转化看板：漏斗+分类统计+经理排行"""
+    from sqlalchemy import func
+    from app.models import Lead, NewsItem
+
+    # 系统商机数（已发布资讯）
+    total_opportunities = db.query(func.count(NewsItem.id)).filter(
+        NewsItem.status == "published",
+        NewsItem.is_deleted == False,
+    ).scalar() or 0
+
+    # 线索统计
+    base_query = db.query(Lead).filter(Lead.is_deleted == False)
+    total_leads = base_query.count()
+    active_leads = base_query.filter(Lead.status == "active").count()
+    converted_leads = base_query.filter(Lead.status == "converted").count()
+    lost_leads = base_query.filter(Lead.status == "lost").count()
+
+    # 转化率
+    conversion_rate = round(converted_leads / total_leads * 100, 1) if total_leads > 0 else 0.0
+
+    # 金额统计
+    total_estimated = db.query(func.coalesce(func.sum(Lead.estimated_amount), 0)).filter(
+        Lead.is_deleted == False
+    ).scalar() or 0
+    total_converted = db.query(func.coalesce(func.sum(Lead.converted_amount), 0)).filter(
+        Lead.is_deleted == False
+    ).scalar() or 0
+
+    # 按行动分类统计
+    category_rows = db.query(
+        Lead.source_category,
+        func.count(Lead.id).label("cnt"),
+        func.coalesce(func.sum(Lead.estimated_amount), 0).label("est"),
+    ).filter(
+        Lead.is_deleted == False,
+        Lead.source_category.isnot(None),
+    ).group_by(Lead.source_category).all()
+
+    category_breakdown = [
+        {"category": r[0], "count": r[1], "estimated_amount": float(r[2] or 0)}
+        for r in category_rows
+    ]
+
+    # 经理排行
+    manager_rows = db.query(
+        Lead.assignee_id,
+        func.count(Lead.id).label("total"),
+        func.count(Lead.id).filter(Lead.status == "converted").label("converted"),
+        func.coalesce(func.sum(Lead.converted_amount), 0).label("amount"),
+    ).filter(
+        Lead.is_deleted == False,
+        Lead.assignee_id.isnot(None),
+    ).group_by(Lead.assignee_id).order_by(func.count(Lead.id).desc()).limit(10).all()
+
+    manager_ranking = []
+    for r in manager_rows:
+        user = db.query(User).filter(User.id == r[0]).first()
+        manager_ranking.append({
+            "manager_name": user.username if user else "未知",
+            "total_leads": r[1],
+            "converted_leads": r[2],
+            "converted_amount": float(r[3] or 0),
+        })
+
+    return DataResponse(data=LeadDashboardSchema(
+        total_opportunities=total_opportunities,
+        total_leads=total_leads,
+        active_leads=active_leads,
+        converted_leads=converted_leads,
+        lost_leads=lost_leads,
+        conversion_rate=conversion_rate,
+        total_estimated_amount=float(total_estimated or 0),
+        total_converted_amount=float(total_converted or 0),
+        category_breakdown=category_breakdown,
+        manager_ranking=manager_ranking,
+    ))
 
 
 # ==================== 跟进记录 ====================

@@ -45,11 +45,11 @@ class BriefingService:
 
         # 按内容分类分组（v3新5类）
         category_icons = {
-            "policy_regulation": "📋",
-            "bidding_procurement": "📑",
-            "enterprise_dynamics": "🏢",
-            "industry_economy": "📊",
-            "financial_market": "💹",
+            "bid_action": "📑",
+            "fin_demand": "💰",
+            "account_chance": "🏦",
+            "park_project": "🏗️",
+            "policy_ref": "📋",
         }
 
         categories = {}

@@ -4,7 +4,7 @@
 import uuid
 from datetime import datetime, date
 
-from sqlalchemy import Column, String, Boolean, DateTime, Date, Integer, Text, ForeignKey
+from sqlalchemy import Column, String, Boolean, DateTime, Date, Integer, Text, ForeignKey, Numeric
 from sqlalchemy.sql import func
 
 from app.database import Base
@@ -35,6 +35,9 @@ class Lead(Base):
     expected_date = Column(Date)  # 预计落地时间
     lead_source = Column(String(32), default="manual")  # 线索来源
     source_news_id = Column(String(36), ForeignKey("news_items.id"))
+    source_category = Column(String(64))  # 来源行动分类（v4）
+    estimated_amount = Column(Numeric(18, 2))  # 预估金额（万元）
+    converted_amount = Column(Numeric(18, 2))  # 实际转化金额（万元）
     priority = Column(Integer, default=3)  # 优先级 1-5
     status = Column(String(32), nullable=False, default="new", index=True)
     # new/active/converted/lost/released

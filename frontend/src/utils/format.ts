@@ -36,13 +36,13 @@ export function formatRelativeTime(date: string | Date | undefined): string {
   }
 }
 
-// 内容分类映射（v3新5类）
+// 行动分类映射（v4新5类）
 export const businessCategoryMap: Record<string, { name: string; color: string; icon: string }> = {
-  policy_regulation: { name: '政策法规', color: '#1a56db', icon: '📋' },
-  bidding_procurement: { name: '招投标采购', color: '#0e7490', icon: '📑' },
-  enterprise_dynamics: { name: '企业动态', color: '#059669', icon: '🏢' },
-  industry_economy: { name: '产业经济', color: '#d97706', icon: '📊' },
-  financial_market: { name: '金融市场', color: '#7c3aed', icon: '💹' },
+  bid_action: { name: '可投标项目', color: '#1a56db', icon: '📑' },
+  fin_demand: { name: '融资需求', color: '#f59e0b', icon: '💰' },
+  account_chance: { name: '开户结算机会', color: '#10b981', icon: '🏦' },
+  park_project: { name: '区域产业动态', color: '#8b5cf6', icon: '🏗️' },
+  policy_ref: { name: '监管与政策', color: '#6b7280', icon: '📋' },
 }
 
 // 资讯类型映射
@@ -71,10 +71,17 @@ export const areaTagMap: Record<string, string> = {
   daxing: '大兴区',
 }
 
-// 行业标签映射
+// 行业标签映射（北京主导产业）
 export const industryTagMap: Record<string, string> = {
-  tech: '信息技术',
-  finance: '金融服务',
+  finance: '金融',
+  tech: '科技',
+  culture: '文化',
+  business_service: '商务服务',
+  advanced_manufacturing: '先进制造',
+  medical_health: '医药健康',
+  digital_economy: '数字经济',
+  other: '其他',
+  // 兼容旧标签
   manufacturing: '制造业',
   real_estate: '房地产',
   medical: '医药健康',
@@ -82,7 +89,6 @@ export const industryTagMap: Record<string, string> = {
   retail: '零售消费',
   logistics: '物流运输',
   energy: '能源环保',
-  culture: '文化传媒',
   government: '政府机构',
 }
 

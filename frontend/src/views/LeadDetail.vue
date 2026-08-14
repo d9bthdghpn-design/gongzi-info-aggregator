@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div class="lead-detail-page">
     <!-- 顶部导航 -->
     <div class="nav-bar">
@@ -94,6 +94,57 @@
           <div class="info-row">
             <span class="info-label">线索来源</span>
             <span class="info-value">{{ lead.lead_source }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 转化信息卡片 -->
+      <div class="info-card">
+        <div class="card-title">
+          <span>转化信息</span>
+          <span class="add-btn" @click="editConversion = !editConversion">
+            {{ editConversion ? '取消' : '编辑' }}
+          </span>
+        </div>
+        <div class="info-list">
+          <div class="info-row">
+            <span class="info-label">预估金额</span>
+            <input
+              v-if="editConversion"
+              v-model.number="convForm.estimated_amount"
+              type="number"
+              class="conv-input"
+              placeholder="万元"
+            />
+            <span v-else class="info-value">{{ lead.estimated_amount ? lead.estimated_amount + ' 万元' : '-' }}</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">实际转化金额</span>
+            <input
+              v-if="editConversion"
+              v-model.number="convForm.converted_amount"
+              type="number"
+              class="conv-input"
+              placeholder="万元"
+            />
+            <span v-else class="info-value">{{ lead.converted_amount ? lead.converted_amount + ' 万元' : '-' }}</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">转化状态</span>
+            <select
+              v-if="editConversion"
+              v-model="convForm.status"
+              class="conv-select"
+            >
+              <option value="new">新建</option>
+              <option value="active">跟进中</option>
+              <option value="converted">已转化</option>
+              <option value="lost">已流失</option>
+            </select>
+            <span v-else class="info-value">{{ statusName }}</span>
+          </div>
+          <div v-if="editConversion" class="conv-actions">
+            <button class="save-btn" @click="saveConversion">保存</button>
           </div>
         </div>
       </div>
@@ -216,6 +267,7 @@ import {
   getLeadFollowups,
   addLeadFollowup,
   releaseLead,
+  updateLead,
   type LeadItem,
   type LeadFollowup,
 } from '@/api/leads'
@@ -238,6 +290,12 @@ const loading = ref(true)
 const showMore = ref(false)
 const showFollowupForm = ref(false)
 const submittingFollowup = ref(false)
+const editConversion = ref(false)
+const convForm = ref({
+  estimated_amount: null as number | null,
+  converted_amount: null as number | null,
+  status: '',
+})
 
 const followupForm = ref({
   followup_type: 'phone',
@@ -290,6 +348,11 @@ async function loadDetail() {
 
     if (detailRes.code === 0) {
       lead.value = detailRes.data
+      convForm.value = {
+        estimated_amount: detailRes.data.estimated_amount ?? null,
+        converted_amount: detailRes.data.converted_amount ?? null,
+        status: detailRes.data.status || 'new',
+      }
     }
     if (followupsRes.code === 0) {
       followups.value = followupsRes.data || []
@@ -347,6 +410,22 @@ async function submitFollowup() {
     showToast('提交失败')
   } finally {
     submittingFollowup.value = false
+  }
+}
+
+async function saveConversion() {
+  const id = route.params.id as string
+  if (!id) return
+  try {
+    const payload: any = { status: convForm.value.status }
+    if (convForm.value.estimated_amount !== null) payload.estimated_amount = convForm.value.estimated_amount
+    if (convForm.value.converted_amount !== null) payload.converted_amount = convForm.value.converted_amount
+    await updateLead(id, payload)
+    showToast('保存成功')
+    editConversion.value = false
+    loadDetail()
+  } catch (e) {
+    showToast('保存失败')
   }
 }
 </script>
@@ -701,6 +780,44 @@ async function submitFollowup() {
   &.disabled {
     opacity: 0.7;
     cursor: not-allowed;
+  }
+}
+
+/* 转化表单 */
+.conv-input, .conv-select {
+  width: 140px;
+  padding: 6px 10px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 13px;
+  color: #1f2937;
+  background: #f9fafb;
+  outline: none;
+
+  &:focus {
+    border-color: #1a56db;
+    background: #fff;
+  }
+}
+
+.conv-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 8px;
+}
+
+.save-btn {
+  padding: 6px 20px;
+  background: #1a56db;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+
+  &:active {
+    background: #1e40af;
   }
 }
 </style>

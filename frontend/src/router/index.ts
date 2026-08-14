@@ -60,6 +60,12 @@ const routes: RouteRecordRaw[] = [
     meta: { title: '专题详情', requiresAuth: true },
   },
   {
+    path: '/dashboard',
+    name: 'Dashboard',
+    component: () => import('@/views/Dashboard.vue'),
+    meta: { title: '转化看板', requiresAuth: true },
+  },
+  {
     path: '/login',
     name: 'Login',
     component: () => import('@/views/Login.vue'),

@@ -110,12 +110,20 @@ class NewsQuerySchema(BaseModel):
 class NewsStatsSchema(BaseModel):
     """资讯统计Schema"""
     today_new: int = 0
-    bidding_count: int = 0
-    policy_count: int = 0
-    enterprise_count: int = 0
+    total: int = 0  # 已发布资讯总数
     high_value_count: int = 0
     today_new_trend: float = 0.0  # 环比变化率
     last_updated: Optional[str] = None  # 最后更新时间
+    # 行动分类统计（v4）
+    bid_action_count: int = 0
+    fin_demand_count: int = 0
+    account_chance_count: int = 0
+    park_project_count: int = 0
+    policy_ref_count: int = 0
+    # 兼容旧字段
+    bidding_count: int = 0
+    policy_count: int = 0
+    enterprise_count: int = 0
 
 
 class TopicSchema(BaseSchema):

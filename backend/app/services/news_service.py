@@ -178,6 +178,26 @@ class NewsService(CRUDBase[NewsItem, NewsItemCreateSchema, NewsItemUpdateSchema]
             NewsItem.is_deleted == False,
         ).scalar() or 0
 
+        # 已发布资讯总数
+        total = db.query(func.count(NewsItem.id)).filter(
+            NewsItem.status == "published",
+            NewsItem.is_deleted == False,
+        ).scalar() or 0
+
+        # 行动分类统计（v4）
+        def _count_category(cat):
+            return db.query(func.count(NewsItem.id)).filter(
+                NewsItem.business_category == cat,
+                NewsItem.status == "published",
+                NewsItem.is_deleted == False,
+            ).scalar() or 0
+
+        bid_action_count = _count_category("bid_action")
+        fin_demand_count = _count_category("fin_demand")
+        account_chance_count = _count_category("account_chance")
+        park_project_count = _count_category("park_project")
+        policy_ref_count = _count_category("policy_ref")
+
         # 最后更新时间（最新资讯的创建时间）
         last_updated_obj = db.query(func.max(NewsItem.created_at)).filter(
             NewsItem.status == "published",
@@ -187,12 +207,18 @@ class NewsService(CRUDBase[NewsItem, NewsItemCreateSchema, NewsItemUpdateSchema]
 
         return NewsStatsSchema(
             today_new=today_new,
-            bidding_count=bidding_count,
-            policy_count=policy_count,
-            enterprise_count=enterprise_count,
+            total=total,
             high_value_count=high_value_count,
             today_new_trend=today_new_trend,
             last_updated=last_updated,
+            bid_action_count=bid_action_count,
+            fin_demand_count=fin_demand_count,
+            account_chance_count=account_chance_count,
+            park_project_count=park_project_count,
+            policy_ref_count=policy_ref_count,
+            bidding_count=bidding_count,
+            policy_count=policy_count,
+            enterprise_count=enterprise_count,
         )
 
     def audit_news(

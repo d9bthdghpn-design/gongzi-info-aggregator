@@ -49,9 +49,8 @@ def process_news_task(self, news_id: str):
         # 仅对已发布的高价值商机进行即时推送
         if news.status == "published" and news.quality_score and news.quality_score >= settings.HIGH_VALUE_SCORE:
             try:
-                from app.services.push_service import send_message, format_high_value_message
-                text = format_high_value_message(news)
-                send_message(text)
+                from app.services.push_service import push_high_value_alert
+                push_high_value_alert(news)
                 logger.info(f"高价值商机已推送: {news_id}")
             except Exception as e:
                 logger.warning(f"高价值推送失败（不影响主流程）: {e}")
