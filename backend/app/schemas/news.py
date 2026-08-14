@@ -101,6 +101,7 @@ class NewsQuerySchema(BaseModel):
     status: Optional[str] = "published"
     start_date: Optional[date] = None
     end_date: Optional[date] = None
+    date_range: Optional[str] = None  # 快捷时间范围：7d/1m/3m/6m
     min_quality_score: Optional[int] = None
     sort_by: str = "publish_date"
     sort_order: str = "desc"

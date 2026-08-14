@@ -43,25 +43,18 @@ def process_news_task(self, news_id: str):
             return {"status": "failed", "news_id": news_id}
 
         db.refresh(news)
-        logger.info(f"AI处理完成: {news_id}, 评分: {news.quality_score}")
+        logger.info(f"AI处理完成: {news_id}, 评分: {news.quality_score}, 状态: {news.status}")
 
-        # 根据评分自动发布或待审核
-        if news.quality_score and news.quality_score >= settings.AI_AUTO_PUBLISH_SCORE:
-            news.status = "published"
-            db.commit()
-
-            # 高价值商机即时推送
-            if news.quality_score >= settings.HIGH_VALUE_SCORE:
-                try:
-                    from app.services.push_service import send_message, format_high_value_message
-                    text = format_high_value_message(news)
-                    send_message(text)
-                    logger.info(f"高价值商机已推送: {news_id}")
-                except Exception as e:
-                    logger.warning(f"高价值推送失败（不影响主流程）: {e}")
-        else:
-            news.status = "pending_review"
-            db.commit()
+        # 取消审核机制：AI处理后直接发布（ai_service已设置status）
+        # 仅对已发布的高价值商机进行即时推送
+        if news.status == "published" and news.quality_score and news.quality_score >= settings.HIGH_VALUE_SCORE:
+            try:
+                from app.services.push_service import send_message, format_high_value_message
+                text = format_high_value_message(news)
+                send_message(text)
+                logger.info(f"高价值商机已推送: {news_id}")
+            except Exception as e:
+                logger.warning(f"高价值推送失败（不影响主流程）: {e}")
 
         return {"status": "success", "news_id": news_id, "score": news.quality_score}
 

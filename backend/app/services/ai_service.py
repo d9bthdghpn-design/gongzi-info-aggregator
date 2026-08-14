@@ -145,6 +145,7 @@ class AIService:
                 "info_type": "policy",
                 "area_tags": ["chaoyang"],
                 "industry_tags": ["tech"],
+                "is_bank_relevant": True,
             }, ensure_ascii=False)
         elif "摘要" in system_prompt or "summary" in system_prompt.lower():
             return "这是一条重要的资讯摘要，包含了核心业务信息和关键数据。"
@@ -169,6 +170,7 @@ class AIService:
 2. info_type: 资讯类型（policy政策/bidding招投标/enterprise企业/park园区）
 3. area_tags: 区域标签数组，仅限以下标准值：chaoyang(朝阳区)、dongcheng(东城区)、tongzhou(通州区)、yizhuang(亦庄/经开区)、beijing(北京市级)、national(全国性)、other(其他地区)；无明确区域则为空数组
 4. industry_tags: 行业标签数组（如tech信息技术、finance金融、manufacturing制造业、real_estate房地产、medical医疗等）
+5. is_bank_relevant: 是否与银行对公业务相关（true/false）。判断标准：只要资讯内容能转化为银行对公业务机会即为相关，包括但不限于：存贷款、结算、投行、财资、供应链金融、普惠金融、金融市场、监管政策、企业融资、招投标、产业政策、区域经济、园区动态、重点企业动态等。仅当资讯与银行业务完全无关（如纯娱乐、体育、社会八卦、个人生活类）时才为false。
 
 请严格以JSON格式返回，不要有其他文字。"""
 
@@ -184,6 +186,7 @@ class AIService:
                 "info_type": None,
                 "area_tags": [],
                 "industry_tags": [],
+                "is_bank_relevant": True,  # 异常时默认相关，避免误杀
             }, 0, 0
 
     def generate_summary(self, title: str, content: str) -> str:
@@ -240,7 +243,7 @@ class AIService:
 
 1. event_severity（事件严重性）：政策力度、资金规模、影响程度，分值越高表示事件越重大
 2. impact_scope（影响范围）：覆盖企业数量、行业广度、区域范围，分值越高表示影响面越广
-3. asset_sensitivity（资产敏感度）：对银行存贷款、投行、财资、供应链等业务的直接关联度，分值越高表示银行业务机会越直接
+3. asset_sensitivity（业务相关性/资产敏感度）：与银行对公业务（存贷款、结算、投行、财资、供应链金融、普惠金融、金融市场、企业融资等）的直接关联度，分值越高表示银行业务机会越直接、越可落地。与银行业务完全无关的资讯此项应低于30分
 4. credibility（可信度）：来源权威性、信息确定性、是否正式发文，分值越高表示信息越可靠
 5. novelty（新颖度）：是否新政策、新趋势、首次发布，分值越高表示越新颖
 6. timeliness（时效性）：发布时间近度、窗口期紧迫度，分值越高表示越及时
@@ -329,8 +332,13 @@ class AIService:
             input_tokens_total += in_tok
             output_tokens_total += out_tok
 
-            # 更新状态
-            news.status = "pending_review"
+            # 更新状态：取消审核，AI处理后直接发布
+            # 若AI判断与银行业务完全无关，则标记为rejected（在classify结果中判断）
+            is_bank_relevant = classification.get("is_bank_relevant", True)
+            if is_bank_relevant is False:
+                news.status = "rejected"
+            else:
+                news.status = "published"
 
             duration_ms = int((time.time() - start_time) * 1000)
 

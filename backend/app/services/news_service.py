@@ -85,6 +85,13 @@ class NewsService(CRUDBase[NewsItem, NewsItemCreateSchema, NewsItemUpdateSchema]
         if query_params.end_date:
             query = query.filter(NewsItem.publish_date <= query_params.end_date)
 
+        # 快捷时间范围筛选（7d/1m/3m/6m）
+        if query_params.date_range:
+            range_days = {"7d": 7, "1m": 30, "3m": 90, "6m": 180}.get(query_params.date_range)
+            if range_days:
+                date_from = date.today() - timedelta(days=range_days)
+                query = query.filter(NewsItem.publish_date >= date_from)
+
         # 最低质量分筛选
         if query_params.min_quality_score:
             query = query.filter(NewsItem.quality_score >= query_params.min_quality_score)

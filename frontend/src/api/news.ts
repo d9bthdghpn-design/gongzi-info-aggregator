@@ -82,6 +82,7 @@ export interface NewsQueryParams {
   min_quality_score?: number
   start_date?: string
   end_date?: string
+  date_range?: string  // 快捷时间范围：7d/1m/3m/6m
   sort_by?: string
   sort_order?: string
 }

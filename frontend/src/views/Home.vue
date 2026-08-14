@@ -64,6 +64,37 @@
       </div>
     </div>
 
+    <!-- 时间筛选栏 -->
+    <div class="time-filter-bar">
+      <div class="time-scroll">
+        <div
+          class="time-chip"
+          :class="{ active: timeRange === 'all' }"
+          @click="setTimeRange('all')"
+        >全部时间</div>
+        <div
+          class="time-chip"
+          :class="{ active: timeRange === '7d' }"
+          @click="setTimeRange('7d')"
+        >近7天</div>
+        <div
+          class="time-chip"
+          :class="{ active: timeRange === '1m' }"
+          @click="setTimeRange('1m')"
+        >近1月</div>
+        <div
+          class="time-chip"
+          :class="{ active: timeRange === '3m' }"
+          @click="setTimeRange('3m')"
+        >近3月</div>
+        <div
+          class="time-chip"
+          :class="{ active: timeRange === '6m' }"
+          @click="setTimeRange('6m')"
+        >近半年</div>
+      </div>
+    </div>
+
     <!-- 展开筛选面板 -->
     <div v-if="showFilterPanel" class="filter-panel">
       <div class="panel-section">
@@ -88,14 +119,6 @@
             :class="{ active: selectedIndustry === ind.value }"
             @click="setIndustry(ind.value)"
           >{{ ind.label }}</div>
-        </div>
-      </div>
-      <div class="panel-section">
-        <label class="panel-label">时间范围</label>
-        <div class="time-chips">
-          <div class="time-chip" :class="{ active: timeRange === 'all' }" @click="setTimeRange('all')">全部</div>
-          <div class="time-chip" :class="{ active: timeRange === '7d' }" @click="setTimeRange('7d')">近7天</div>
-          <div class="time-chip" :class="{ active: timeRange === '30d' }" @click="setTimeRange('30d')">近30天</div>
         </div>
       </div>
     </div>
@@ -249,14 +272,8 @@ function buildQueryParams(): NewsQueryParams {
   if (minScore.value > 0) {
     params.min_quality_score = minScore.value
   }
-  if (timeRange.value === '7d') {
-    const d = new Date()
-    d.setDate(d.getDate() - 7)
-    params.start_date = d.toISOString().split('T')[0]
-  } else if (timeRange.value === '30d') {
-    const d = new Date()
-    d.setDate(d.getDate() - 30)
-    params.start_date = d.toISOString().split('T')[0]
+  if (timeRange.value !== 'all') {
+    params.date_range = timeRange.value
   }
   return params
 }
@@ -552,6 +569,49 @@ onMounted(() => {
   position: absolute;
   top: 2px;
   right: 2px;
+}
+
+/* 时间筛选栏 */
+.time-filter-bar {
+  display: flex;
+  align-items: center;
+  padding: 8px 16px;
+  background: #fff;
+  border-bottom: 1px solid #eef0f4;
+  position: sticky;
+  top: 152px;
+  z-index: 98;
+}
+
+.time-scroll {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  flex: 1;
+  scrollbar-width: none;
+}
+
+.time-scroll::-webkit-scrollbar {
+  display: none;
+}
+
+.time-chip {
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 12px;
+  color: #8c8c8c;
+  background: #f5f7fa;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s;
+  border: 1px solid transparent;
+}
+
+.time-chip.active {
+  background: #fff;
+  color: #1a56db;
+  border-color: #1a56db;
+  font-weight: 600;
 }
 
 /* 筛选面板 */

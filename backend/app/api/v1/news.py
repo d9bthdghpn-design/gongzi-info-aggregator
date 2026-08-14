@@ -43,6 +43,7 @@ def get_news_list(
     min_quality_score: Optional[int] = None,
     start_date: Optional[date] = None,
     end_date: Optional[date] = None,
+    date_range: Optional[str] = Query(None, description="快捷时间范围：7d/1m/3m/6m"),
     sort_by: str = "publish_date",
     sort_order: str = "desc",
     db: Session = Depends(get_db),
@@ -54,6 +55,7 @@ def get_news_list(
         business_category=business_category, info_type=info_type,
         status=status, min_quality_score=min_quality_score,
         start_date=start_date, end_date=end_date,
+        date_range=date_range,
         sort_by=sort_by, sort_order=sort_order,
     )
     items, total = news_service.get_news_list(db, query_params)
