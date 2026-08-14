@@ -228,7 +228,7 @@ def assign_lead(
 
 # ==================== 转化看板 ====================
 
-@router.get("/dashboard", response_model=DataResponse[LeadDashboardSchema])
+@router.get("/dashboard")
 def get_lead_dashboard(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
@@ -299,7 +299,7 @@ def get_lead_dashboard(
                 "converted_amount": float(r[3] or 0),
             })
 
-        return DataResponse(data=LeadDashboardSchema(
+        return {"code": 0, "message": "success", "data": LeadDashboardSchema(
             total_opportunities=total_opportunities,
             total_leads=total_leads,
             active_leads=active_leads,
@@ -310,14 +310,10 @@ def get_lead_dashboard(
             total_converted_amount=float(total_converted or 0),
             category_breakdown=category_breakdown,
             manager_ranking=manager_ranking,
-        ))
+        ).model_dump()}
     except Exception as e:
         error_detail = traceback.format_exc()
-        return DataResponse(
-            code=500,
-            message=f"看板查询失败: {str(e)[:200]}",
-            data={"error": error_detail[:500]},
-        )
+        return {"code": 500, "message": f"看板查询失败: {str(e)[:300]}", "data": {"error": error_detail[:800]}}
 
 
 # ==================== 跟进记录 ====================
