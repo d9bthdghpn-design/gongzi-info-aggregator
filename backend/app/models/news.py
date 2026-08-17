@@ -28,7 +28,7 @@ class NewsItem(Base):
     title = Column(String(512), nullable=False)
     content_raw = Column(Text)
     content_summary = Column(String(500))
-    business_category = Column(String(64), index=True)  # 业务分类标签code
+    business_category = Column(String(64), index=True)  # 行动分类: bid_action/fin_demand/account_chance/park_project/policy_ref
     area_tags = Column(JSON_TYPE, default=list)  # 区域标签数组
     industry_tags = Column(JSON_TYPE, default=list)  # 行业标签数组
     info_type = Column(String(32), index=True)  # 资讯类型: policy/bidding/enterprise/park
