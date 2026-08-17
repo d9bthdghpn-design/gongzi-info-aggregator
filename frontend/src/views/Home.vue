@@ -303,10 +303,10 @@ function buildQueryParams(): NewsQueryParams {
     params.business_category = activeCategory.value
   }
   if (activeArea.value !== 'all') {
-    params.area_tags = [activeArea.value]
+    params.area_tags = activeArea.value
   }
   if (selectedIndustry.value) {
-    params.industry_tags = [selectedIndustry.value]
+    params.industry_tags = selectedIndustry.value
   }
   if (minScore.value > 0) {
     params.min_quality_score = minScore.value
