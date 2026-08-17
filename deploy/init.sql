@@ -281,43 +281,46 @@ CREATE INDEX IF NOT EXISTS idx_topics_active ON topics(is_active, sort_order);
 -- 注意：管理员用户不在此处创建，请部署后运行 init_db.py 或通过 /api/v1/auth/register 接口创建
 -- 默认账号: admin / admin123
 
--- 初始化业务分类标签
-INSERT INTO tag_dictionary (tag_type, tag_code, tag_name, tag_color, sort_order, keywords) VALUES
-('business', 'deposit', '存款业务', '#3b82f6', 1, '["存款","开户","结算","资金"]'),
-('business', 'loan', '贷款业务', '#ef4444', 2, '["贷款","融资","授信","抵押","担保"]'),
-('business', 'investment_bank', '投行业务', '#8b5cf6', 3, '["发债","上市","并购","重组","ABS"]'),
-('business', 'treasury', '财资管理', '#f59e0b', 4, '["现金管理","财资","流动性","资金池"]'),
-('business', 'supply_chain', '供应链金融', '#10b981', 5, '["供应链","应收账款","保理","票据"]')
+-- 初始化行动分类标签（一级）
+INSERT INTO tag_dictionary (tag_type, tag_code, tag_name, tag_color, keywords, sort_order) VALUES
+('action', 'bid_action', '可投标项目', '#1a56db', '["招标","投标","采购","中标","招标公告","磋商","询价"]', 1),
+('action', 'fin_demand', '融资需求', '#f59e0b', '["融资","发债","增资","贷款","授信","IPO","定增","并购"]', 2),
+('action', 'account_chance', '开户结算机会', '#10b981', '["新设","注册","成立","变更","开户","落户","迁入"]', 3),
+('action', 'park_project', '区域产业动态', '#8b5cf6', '["园区","产业","招商","入驻","投资","项目"]', 4),
+('action', 'policy_ref', '监管与政策', '#6b7280', '["政策","通知","公告","办法","规定","条例","意见"]', 5)
 ON CONFLICT DO NOTHING;
 
--- 初始化区域标签
+-- 初始化区域标签（标准7类）
 INSERT INTO tag_dictionary (tag_type, tag_code, tag_name, tag_color, sort_order) VALUES
 ('area', 'chaoyang', '朝阳区', '#06b6d4', 1),
-('area', 'haidian', '海淀区', '#0ea5e9', 2),
-('area', 'fengtai', '丰台区', '#14b8a6', 3)
+('area', 'dongcheng', '东城区', '#0ea5e9', 2),
+('area', 'tongzhou', '通州区', '#14b8a6', 3),
+('area', 'yizhuang', '亦庄经开区', '#6366f1', 4),
+('area', 'beijing', '北京市级', '#3b82f6', 5),
+('area', 'national', '全国性', '#8b5cf6', 6),
+('area', 'other', '其他地区', '#9ca3af', 7)
 ON CONFLICT DO NOTHING;
 
--- 初始化行业标签
+-- 初始化行业标签（北京主导产业）
 INSERT INTO tag_dictionary (tag_type, tag_code, tag_name, tag_color, sort_order) VALUES
-('industry', 'tech', '信息技术', '#6366f1', 1),
-('industry', 'finance', '金融服务', '#0ea5e9', 2),
-('industry', 'manufacturing', '制造业', '#f59e0b', 3),
-('industry', 'real_estate', '房地产', '#ef4444', 4),
-('industry', 'medical', '医药健康', '#10b981', 5),
-('industry', 'education', '教育培训', '#8b5cf6', 6),
-('industry', 'retail', '零售消费', '#ec4899', 7),
-('industry', 'logistics', '物流运输', '#f97316', 8),
-('industry', 'energy', '能源环保', '#84cc16', 9),
-('industry', 'culture', '文化传媒', '#a855f7', 10),
-('industry', 'government', '政府机构', '#64748b', 11)
+('industry', 'finance', '金融', '#0ea5e9', 1),
+('industry', 'tech', '科技', '#6366f1', 2),
+('industry', 'culture', '文化', '#a855f7', 3),
+('industry', 'business_service', '商务服务', '#f59e0b', 4),
+('industry', 'advanced_manufacturing', '先进制造', '#ef4444', 5),
+('industry', 'medical_health', '医药健康', '#10b981', 6),
+('industry', 'digital_economy', '数字经济', '#06b6d4', 7),
+('industry', 'other', '其他', '#9ca3af', 8)
 ON CONFLICT DO NOTHING;
 
--- 初始化资讯类型标签
+-- 初始化商机类型标签
 INSERT INTO tag_dictionary (tag_type, tag_code, tag_name, tag_color, sort_order) VALUES
-('info_type', 'policy', '政策动态', '#3b82f6', 1),
-('info_type', 'bidding', '招投标', '#ef4444', 2),
-('info_type', 'enterprise', '企业动态', '#10b981', 3),
-('info_type', 'park', '园区动态', '#f59e0b', 4)
+('opportunity', 'bidding', '招投标', '#1a56db', 1),
+('opportunity', 'financing', '融资', '#f59e0b', 2),
+('opportunity', 'merger', '并购', '#8b5cf6', 3),
+('opportunity', 'account', '开户', '#10b981', 4),
+('opportunity', 'subsidy', '补贴申报', '#06b6d4', 5),
+('opportunity', 'land', '土地出让', '#ef4444', 6)
 ON CONFLICT DO NOTHING;
 
 -- 初始化示例采集渠道
