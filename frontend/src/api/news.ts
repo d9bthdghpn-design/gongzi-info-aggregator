@@ -49,6 +49,12 @@ export interface NewsStats {
   high_value_count: number
   today_new_trend: number
   last_updated?: string
+  total?: number
+  bid_action_count?: number
+  fin_demand_count?: number
+  account_chance_count?: number
+  park_project_count?: number
+  policy_ref_count?: number
 }
 
 export interface TagInfo {
