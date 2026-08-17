@@ -81,33 +81,36 @@ def init_db():
         if db.query(TagDictionary).count() == 0:
             print("正在插入标签数据...")
             all_tags = [
-                # 业务分类
-                ("business", "deposit", "存款业务", "#27ae60", 0),
-                ("business", "loan", "贷款业务", "#e74c3c", 1),
-                ("business", "investment_bank", "投行业务", "#9b59b6", 2),
-                ("business", "treasury", "财资业务", "#f39c12", 3),
-                ("business", "supply_chain", "供应链金融", "#1abc9c", 4),
-                # 区域
-                ("area", "chaoyang", "朝阳区", "#3498db", 0),
-                ("area", "haidian", "海淀区", "#2ecc71", 1),
-                ("area", "fengtai", "丰台区", "#e67e22", 2),
-                # 行业
-                ("industry", "tech", "信息技术", "#3498db", 0),
-                ("industry", "finance", "金融服务", "#9b59b6", 1),
-                ("industry", "manufacturing", "制造业", "#e67e22", 2),
-                ("industry", "real_estate", "房地产", "#e74c3c", 3),
-                ("industry", "medical", "医药健康", "#2ecc71", 4),
-                ("industry", "education", "教育培训", "#1abc9c", 5),
-                ("industry", "retail", "零售消费", "#f39c12", 6),
-                ("industry", "logistics", "物流运输", "#34495e", 7),
-                ("industry", "energy", "能源环保", "#27ae60", 8),
-                ("industry", "culture", "文化传媒", "#9b59b6", 9),
-                ("industry", "government", "政府机构", "#2c3e50", 10),
-                # 资讯类型
-                ("info_type", "policy", "政策动态", "#3498db", 0),
-                ("info_type", "bidding", "招投标", "#e67e22", 1),
-                ("info_type", "enterprise", "企业动态", "#2ecc71", 2),
-                ("info_type", "park", "园区动态", "#9b59b6", 3),
+                # 行动分类（一级，v3 行动导向）
+                ("action", "bid_action", "可投标项目", "#1a56db", 0),
+                ("action", "fin_demand", "融资需求", "#f59e0b", 1),
+                ("action", "account_chance", "开户结算机会", "#10b981", 2),
+                ("action", "park_project", "区域产业动态", "#8b5cf6", 3),
+                ("action", "policy_ref", "监管与政策", "#6b7280", 4),
+                # 区域（标准7类）
+                ("area", "chaoyang", "朝阳区", "#06b6d4", 0),
+                ("area", "dongcheng", "东城区", "#0ea5e9", 1),
+                ("area", "tongzhou", "通州区", "#14b8a6", 2),
+                ("area", "yizhuang", "亦庄经开区", "#6366f1", 3),
+                ("area", "beijing", "北京市级", "#3b82f6", 4),
+                ("area", "national", "全国性", "#8b5cf6", 5),
+                ("area", "other", "其他地区", "#9ca3af", 6),
+                # 行业（北京主导产业）
+                ("industry", "finance", "金融", "#0ea5e9", 0),
+                ("industry", "tech", "科技", "#6366f1", 1),
+                ("industry", "culture", "文化", "#a855f7", 2),
+                ("industry", "business_service", "商务服务", "#f59e0b", 3),
+                ("industry", "advanced_manufacturing", "先进制造", "#ef4444", 4),
+                ("industry", "medical_health", "医药健康", "#10b981", 5),
+                ("industry", "digital_economy", "数字经济", "#06b6d4", 6),
+                ("industry", "other", "其他", "#9ca3af", 7),
+                # 商机类型（新增）
+                ("opportunity", "bidding", "招投标", "#1a56db", 0),
+                ("opportunity", "financing", "融资", "#f59e0b", 1),
+                ("opportunity", "merger", "并购", "#8b5cf6", 2),
+                ("opportunity", "account", "开户", "#10b981", 3),
+                ("opportunity", "subsidy", "补贴申报", "#06b6d4", 4),
+                ("opportunity", "land", "土地出让", "#ef4444", 5),
             ]
             for tag_type, code, name, color, order in all_tags:
                 tag = TagDictionary(
