@@ -273,11 +273,11 @@ const timeRange = ref('all')
 const sortBy = ref('publish_date')
 const showFilterPanel = ref(false)
 
-const stats = ref({ total: 0, highValue: 0, today: 0 })
+const stats = ref({ total: 0, highValue: 0, today: 0, bidAction: 0, finDemand: 0 })
 
-// 行动分类计数
-const bidCount = computed(() => newsList.value.filter(n => n.business_category === 'bid_action').length)
-const finCount = computed(() => newsList.value.filter(n => n.business_category === 'fin_demand').length)
+// 行动分类计数（优先用全局统计，回退到当前列表统计）
+const bidCount = computed(() => stats.value.bidAction || newsList.value.filter(n => n.business_category === 'bid_action').length)
+const finCount = computed(() => stats.value.finDemand || newsList.value.filter(n => n.business_category === 'fin_demand').length)
 
 function getCatName(cat?: string): string {
   return businessCategoryMap[cat || '']?.name || cat || ''
@@ -364,10 +364,13 @@ async function loadHighValue() {
 async function loadStats() {
   try {
     const res = await getNewsStats()
+    const d = res.data
     stats.value = {
-      total: res.total || (res.policy_count || 0) + (res.bidding_count || 0) + (res.enterprise_count || 0),
-      highValue: res.high_value_count || 0,
-      today: res.today_new || 0,
+      total: d?.total || 0,
+      highValue: d?.high_value_count || 0,
+      today: d?.today_new || 0,
+      bidAction: d?.bid_action_count || 0,
+      finDemand: d?.fin_demand_count || 0,
     }
   } catch (e) {
     console.error('加载统计失败', e)
