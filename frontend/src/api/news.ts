@@ -75,10 +75,11 @@ export interface NewsQueryParams {
   page_size?: number
   keyword?: string
   business_category?: string
+  action_category?: string
   info_type?: string
   status?: string
-  area_tags?: string[]
-  industry_tags?: string[]
+  area_tags?: string  // 逗号分隔，如 chaoyang,dongcheng
+  industry_tags?: string  // 逗号分隔，如 tech,finance
   min_quality_score?: number
   start_date?: string
   end_date?: string
