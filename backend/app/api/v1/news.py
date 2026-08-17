@@ -38,7 +38,10 @@ def get_news_list(
     page_size: int = Query(20, ge=1, le=100),
     keyword: Optional[str] = None,
     business_category: Optional[str] = None,
+    action_category: Optional[str] = None,
     info_type: Optional[str] = None,
+    area_tags: Optional[str] = Query(None, description="区域标签，逗号分隔，如 chaoyang,dongcheng"),
+    industry_tags: Optional[str] = Query(None, description="行业标签，逗号分隔，如 tech,finance"),
     status: Optional[str] = "published",
     min_quality_score: Optional[int] = None,
     start_date: Optional[date] = None,
@@ -50,9 +53,12 @@ def get_news_list(
     current_user: User = Depends(get_current_user),
 ):
     """获取资讯列表"""
+    area_list = [a.strip() for a in area_tags.split(",")] if area_tags else None
+    industry_list = [i.strip() for i in industry_tags.split(",")] if industry_tags else None
     query_params = NewsQuerySchema(
         page=page, page_size=page_size, keyword=keyword,
-        business_category=business_category, info_type=info_type,
+        business_category=business_category or action_category, info_type=info_type,
+        area_tags=area_list, industry_tags=industry_list,
         status=status, min_quality_score=min_quality_score,
         start_date=start_date, end_date=end_date,
         date_range=date_range,
