@@ -31,6 +31,7 @@ class NewsItem(Base):
     business_category = Column(String(64), index=True)  # 行动分类: bid_action/fin_demand/account_chance/park_project/policy_ref
     area_tags = Column(JSON_TYPE, default=list)  # 区域标签数组
     industry_tags = Column(JSON_TYPE, default=list)  # 行业标签数组
+    topic_tags = Column(JSON_TYPE, default=list)  # 主题标签数组（v5 新增，31 个细粒度主题）
     info_type = Column(String(32), index=True)  # 资讯类型: policy/bidding/enterprise/park
     source_type = Column(String(32))  # 来源类型
     source_channel = Column(String(128))  # 来源渠道名称
