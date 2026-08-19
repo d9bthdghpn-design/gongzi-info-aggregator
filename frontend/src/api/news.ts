@@ -8,6 +8,7 @@ export interface NewsItem {
   business_category?: string
   area_tags: string[]
   industry_tags: string[]
+  topic_tags?: string[]  // 主题标签（v5）
   info_type?: string
   source_type?: string
   source_channel?: string
