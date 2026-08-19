@@ -26,6 +26,13 @@
       >
         {{ industryName(ind) }}
       </span>
+      <span
+        v-for="tp in news.topic_tags?.slice(0, 2)"
+        :key="tp"
+        class="tag tag-topic"
+      >
+        {{ topicName(tp) }}
+      </span>
     </div>
 
     <!-- 摘要 -->
@@ -77,6 +84,7 @@ import {
   businessCategoryMap,
   areaTagMap,
   industryTagMap,
+  topicTagMap,
   getQualityScoreColor,
 } from '@/utils/format'
 
@@ -116,6 +124,10 @@ function areaName(code: string): string {
 
 function industryName(code: string): string {
   return industryTagMap[code] || code
+}
+
+function topicName(code: string): string {
+  return topicTagMap[code] || code
 }
 
 function handleClick() {
@@ -176,6 +188,10 @@ function handleClick() {
   .tag-industry {
     background: #f0f9ff;
     color: #0369a1;
+  }
+  .tag-topic {
+    background: #faf5ff;
+    color: #7c3aed;
   }
 }
 
