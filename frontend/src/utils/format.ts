@@ -71,25 +71,76 @@ export const areaTagMap: Record<string, string> = {
   daxing: '大兴区',
 }
 
-// 行业标签映射（北京主导产业）
+// 行业标签映射（v5 十六类）
 export const industryTagMap: Record<string, string> = {
   finance: '金融',
-  tech: '科技',
+  digital_economy: '数字经济',
+  integrated_circuit: '集成电路',
+  biomedicine: '生物医药',
+  new_energy: '新能源节能',
+  intelligent_mfg: '智能制造',
+  automobile: '智能网联汽车',
+  aerospace: '航空航天',
+  commercial_service: '商务服务',
+  culture_tourism: '文化旅游',
+  medical_health: '医药健康',
+  logistics_trade: '物流跨境',
+  construction: '城市建设',
+  education: '教育',
+  government: '政府机构',
+  other: '其他',
+  // 兼容旧标签
+  tech: '数字经济',
   culture: '文化',
   business_service: '商务服务',
   advanced_manufacturing: '先进制造',
-  medical_health: '医药健康',
-  digital_economy: '数字经济',
-  other: '其他',
-  // 兼容旧标签
   manufacturing: '制造业',
   real_estate: '房地产',
   medical: '医药健康',
-  education: '教育培训',
   retail: '零售消费',
   logistics: '物流运输',
   energy: '能源环保',
-  government: '政府机构',
+}
+
+// 主题标签映射（v5 三十一类，二级细化）
+export const topicTagMap: Record<string, string> = {
+  // A. 招投标
+  gov_procurement: '政府采购',
+  project_tender: '工程项目',
+  service_bid: '服务采购',
+  it_bid: 'IT信息化',
+  medical_bid: '医疗设备',
+  single_source: '单一来源',
+  // B. 融资资本
+  ipo_listing: '上市IPO',
+  private_placement: '定增再融资',
+  bond_financing: '债券融资',
+  m_a: '并购重组',
+  loan_demand: '信贷融资',
+  fund_investment: '股权投资',
+  // C. 政策监管
+  monetary_policy: '货币政策',
+  financial_regulation: '金融监管',
+  tax_finance_policy: '财税政策',
+  subsidy_program: '补贴申报',
+  industry_planning: '产业规划',
+  innovation_policy: '科技创新',
+  foreign_trade: '外贸跨境',
+  green_development: '绿色低碳',
+  // D. 园区区域
+  park_settlement: '园区招商',
+  platform_landing: '平台落地',
+  project_launch: '项目开工',
+  land_transfer: '土地出让',
+  // E. 市场企业
+  enterprise_dynamics: '企业动态',
+  economic_data: '经济数据',
+  price_market: '价格市场',
+  rate_forex: '利率汇率',
+  conference_expo: '会议展会',
+  // F. 社会民生
+  sports_event: '文体赛事',
+  social_service: '社会民生',
 }
 
 // 线索状态映射
