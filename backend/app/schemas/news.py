@@ -25,6 +25,7 @@ class NewsItemSchema(BaseSchema):
     business_category: Optional[str] = None
     area_tags: List[str] = []
     industry_tags: List[str] = []
+    topic_tags: List[str] = []  # 主题标签（v5）
     info_type: Optional[str] = None
     source_type: Optional[str] = None
     source_channel: Optional[str] = None
@@ -60,6 +61,7 @@ class NewsItemCreateSchema(BaseModel):
     business_category: Optional[str] = None
     area_tags: List[str] = []
     industry_tags: List[str] = []
+    topic_tags: List[str] = []  # 主题标签（v5）
     info_type: Optional[str] = None
     source_type: Optional[str] = None
     source_channel: Optional[str] = None
@@ -79,6 +81,7 @@ class NewsItemUpdateSchema(BaseModel):
     business_category: Optional[str] = None
     area_tags: Optional[List[str]] = None
     industry_tags: Optional[List[str]] = None
+    topic_tags: Optional[List[str]] = None  # 主题标签（v5）
     info_type: Optional[str] = None
     source_type: Optional[str] = None
     source_channel: Optional[str] = None
